@@ -5,6 +5,7 @@ import { PrecipitationChart } from "@/components/precipitation-chart";
 import { WeatherRadar } from "@/components/weather-radar";
 import { WeatherAlerts } from "@/components/weather-alerts";
 import { WeatherDetails } from "@/components/weather-details";
+import { WeeklyForecast } from "@/components/weekly-forecast";
 import { useWeather } from "@/hooks/use-weather";
 import { useAlerts } from "@/hooks/use-alerts";
 import { useAirQuality } from "@/hooks/use-air-quality";
@@ -44,6 +45,13 @@ export function Home() {
                 <p className="text-sm font-semibold text-green-700 dark:text-green-400">No active weather alerts for your area</p>
               </div>
             )
+        )}
+
+        {/* 7-day forecast */}
+        {!loading && weather.forecast.length > 0 && (
+          <section>
+            <WeeklyForecast days={weather.forecast} />
+          </section>
         )}
 
         {/* Weather details grid */}

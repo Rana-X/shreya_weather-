@@ -6,6 +6,15 @@ export interface HourlyPrecip {
   probability: number;
 }
 
+export interface DayForecast {
+  date: string;        // "2026-06-27"
+  dayName: string;     // "Today", "Mon", "Tue", …
+  high: number;
+  low: number;
+  type: CorrectionOfficialWeatherType;
+  precipChance: number;
+}
+
 export interface WeatherData {
   temperature: number;
   feelsLike: number;
@@ -21,6 +30,7 @@ export interface WeatherData {
   moonPhase: number; // 0–1
   sunrise: string;
   sunset: string;
+  forecast: DayForecast[];
   loading: boolean;
   error: string | null;
   lat: number;
@@ -76,8 +86,8 @@ const fetchWeatherData = async (lat: number, lon: number): Promise<WeatherData> 
     `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,` +
     `relative_humidity_2m,precipitation_probability,dew_point_2m,surface_pressure` +
     `&hourly=precipitation_probability,visibility,uv_index` +
-    `&daily=sunrise,sunset` +
-    `&wind_speed_unit=mph&temperature_unit=fahrenheit&forecast_days=2&timezone=auto`;
+    `&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max` +
+    `&wind_speed_unit=mph&temperature_unit=fahrenheit&forecast_days=7&timezone=auto`;
 
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Weather API ${res.status}`);
@@ -85,6 +95,28 @@ const fetchWeatherData = async (lat: number, lon: number): Promise<WeatherData> 
 
   const cur = json.current;
   const daily = json.daily ?? {};
+
+  // Build 7-day forecast from daily data
+  const dailyTimes: string[]  = daily.time ?? [];
+  const dailyMaxes: number[]  = daily.temperature_2m_max ?? [];
+  const dailyMins: number[]   = daily.temperature_2m_min ?? [];
+  const dailyCodes: number[]  = daily.weather_code ?? [];
+  const dailyPrecip: number[] = daily.precipitation_probability_max ?? [];
+  const forecast: DayForecast[] = dailyTimes.map((dateStr, i) => {
+    const d = new Date(`${dateStr}T12:00:00`);
+    const dayName = i === 0
+      ? "Today"
+      : d.toLocaleDateString([], { weekday: "short" });
+    return {
+      date: dateStr,
+      dayName,
+      high: Math.round(dailyMaxes[i] ?? 0),
+      low:  Math.round(dailyMins[i]  ?? 0),
+      type: mapWeatherCode(dailyCodes[i] ?? 0, 0),
+      precipChance: Math.round(dailyPrecip[i] ?? 0),
+    };
+  });
+
   const hourlyTimes: string[] = json.hourly?.time ?? [];
   const hourlyProb: number[] = json.hourly?.precipitation_probability ?? [];
   const hourlyVis: number[] = json.hourly?.visibility ?? [];
@@ -129,6 +161,7 @@ const fetchWeatherData = async (lat: number, lon: number): Promise<WeatherData> 
     moonPhase: calcMoonPhase(new Date()),
     sunrise: fmtTime(daily.sunrise?.[0] ?? ""),
     sunset: fmtTime(daily.sunset?.[0] ?? ""),
+    forecast,
     loading: false,
     error: null,
     lat,
@@ -152,6 +185,7 @@ export function useWeather() {
     moonPhase: 0,
     sunrise: "—",
     sunset: "—",
+    forecast: [],
     loading: true,
     error: null,
     lat: NYC_LAT,
