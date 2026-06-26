@@ -132,19 +132,22 @@ const fetchWeatherData = async (lat: number, lon: number): Promise<WeatherData> 
   const hourlyProb: number[] = json.hourly?.precipitation_probability ?? [];
   const hourlyVis: number[] = json.hourly?.visibility ?? [];
   const hourlyUV: number[] = json.hourly?.uv_index ?? [];
+  const hourlyTemps: number[] = json.hourly?.temperature_2m ?? [];
+  const hourlyCodes: number[] = json.hourly?.weather_code ?? [];
 
   const temp = cur.temperature_2m ?? 0;
   const wind = cur.wind_speed_10m ?? 0;
   const code = cur.weather_code ?? 0;
 
-  // Current hourly index for visibility & UV
+  // Current hourly index for visibility, UV, and "now" marker
   const hIdx = currentHourIndex(hourlyTimes);
   const visibilityM = hourlyVis[hIdx] ?? 0;
   const visibilityMi = Math.round((visibilityM / 1609.34) * 10) / 10;
   const uvIndex = Math.round(hourlyUV[hIdx] ?? 0);
 
-  // Next 12 hours of precipitation probability
   const now = new Date();
+
+  // Next 12 hours of precipitation probability (for bar chart)
   const hourlyPrecip: HourlyPrecip[] = [];
   let count = 0;
   for (let i = 0; i < hourlyTimes.length && count < 12; i++) {
@@ -157,6 +160,29 @@ const fetchWeatherData = async (lat: number, lon: number): Promise<WeatherData> 
     }
   }
 
+  // Next 24 hours for the hourly forecast strip
+  const fmt12 = (h: number) =>
+    h === 0 ? "12 AM" : h < 12 ? `${h} AM` : h === 12 ? "12 PM" : `${h - 12} PM`;
+  const hourlyForecast: HourlyForecast[] = [];
+  let hCount = 0;
+  for (let i = 0; i < hourlyTimes.length && hCount < 25; i++) {
+    const slotTime = new Date(hourlyTimes[i]);
+    const isNow = i === hIdx;
+    if (slotTime >= now || isNow) {
+      const h = slotTime.getHours();
+      hourlyForecast.push({
+        time: hourlyTimes[i],
+        label: isNow ? "Now" : fmt12(h),
+        temp: Math.round(hourlyTemps[i] ?? 0),
+        type: mapWeatherCode(hourlyCodes[i] ?? 0, 0),
+        precipChance: Math.round(hourlyProb[i] ?? 0),
+        isNow,
+        isMidnight: h === 0,
+      });
+      hCount++;
+    }
+  }
+
   return {
     temperature: Math.round(temp),
     feelsLike: Math.round(cur.apparent_temperature ?? temp),
@@ -165,6 +191,7 @@ const fetchWeatherData = async (lat: number, lon: number): Promise<WeatherData> 
     type: mapWeatherCode(code, wind),
     precipitationChance: Math.round(cur.precipitation_probability ?? 0),
     hourlyPrecip,
+    hourlyForecast,
     uvIndex,
     dewPoint: Math.round(cur.dew_point_2m ?? 0),
     pressure: Math.round(cur.surface_pressure ?? 0),
@@ -189,6 +216,7 @@ export function useWeather() {
     type: "sunny",
     precipitationChance: 0,
     hourlyPrecip: [],
+    hourlyForecast: [],
     uvIndex: 0,
     dewPoint: 0,
     pressure: 0,
