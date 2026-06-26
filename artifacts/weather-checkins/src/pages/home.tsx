@@ -9,6 +9,7 @@ import { WeatherAlerts } from "@/components/weather-alerts";
 import { WeatherDetails } from "@/components/weather-details";
 import { WeeklyForecast } from "@/components/weekly-forecast";
 import { HourlyForecastStrip } from "@/components/hourly-forecast";
+import { LocalNews } from "@/components/local-news";
 import { useWeather } from "@/hooks/use-weather";
 import { useAlerts } from "@/hooks/use-alerts";
 import { useAirQuality } from "@/hooks/use-air-quality";
@@ -159,6 +160,13 @@ export function Home() {
         <section>
           <WeatherRadar lat={lat} lon={lon} />
         </section>
+
+        {/* Local news */}
+        {!loading && (
+          <section>
+            <LocalNews lat={lat} lon={lon} />
+          </section>
+        )}
 
         {/* Neighbor corrections */}
         <section className="space-y-6 pt-4">
