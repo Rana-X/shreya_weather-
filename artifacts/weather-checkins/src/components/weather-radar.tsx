@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
-import { Loader2, Play, Pause, Wind, Thermometer, CloudRain, Crown } from "lucide-react";
+import { Loader2, Play, Pause, Wind, Thermometer, CloudRain, Crown, MapPin } from "lucide-react";
 import { useLocation } from "wouter";
 import { useSubscription } from "@/hooks/use-subscription";
 import "leaflet/dist/leaflet.css";
@@ -13,6 +13,7 @@ interface RadarFrame {
 interface Props {
   lat: number;
   lon: number;
+  locationName?: string;
 }
 
 type Layer = "rain" | "wind" | "temperature";
@@ -78,6 +79,15 @@ function RadarLayer({
 const FRAME_MS = 500;
 const PAUSE_AT_END_MS = 1200;
 
+// Flies the map to the given coordinates whenever they change or trigger fires.
+function MapRecenter({ lat, lon, trigger }: { lat: number; lon: number; trigger: number }) {
+  const map = useMap();
+  useEffect(() => {
+    map.flyTo([lat, lon], map.getZoom(), { animate: true, duration: 0.8 });
+  }, [lat, lon, trigger]);
+  return null;
+}
+
 function WindyEmbed({ lat, lon, overlay }: { lat: number; lon: number; overlay: "wind" | "temp" }) {
   const src =
     `https://embed.windy.com/embed2.html` +
@@ -123,12 +133,13 @@ function PremiumGate({ layer }: { layer: "wind" | "temperature" }) {
   );
 }
 
-export function WeatherRadar({ lat, lon }: Props) {
+export function WeatherRadar({ lat, lon, locationName }: Props) {
   const [activeLayer, setActiveLayer] = useState<Layer>("rain");
   const [frames, setFrames] = useState<RadarFrame[]>([]);
   const [frameIndex, setFrameIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [radarLoading, setRadarLoading] = useState(true);
+  const [recenterKey, setRecenterKey] = useState(0);
   const animRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { isPremium } = useSubscription();
 
@@ -210,6 +221,17 @@ export function WeatherRadar({ lat, lon }: Props) {
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
               </span>
             )}
+            {/* Location pill — tap to snap map back to current location */}
+            {activeLayer === "rain" && (
+              <button
+                onClick={() => setRecenterKey((k) => k + 1)}
+                title="Snap back to your location"
+                className="flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-full bg-muted hover:bg-primary/10 hover:text-primary text-muted-foreground transition-colors max-w-[130px]"
+              >
+                <MapPin className="w-3 h-3 shrink-0" />
+                <span className="truncate">{locationName || "My location"}</span>
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-3">
             {activeLayer === "rain" && frameTime && (
@@ -273,6 +295,8 @@ export function WeatherRadar({ lat, lon }: Props) {
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                 attribution='&copy; <a href="https://carto.com/">CARTO</a>'
               />
+              {/* Re-centers whenever lat/lon change (new search) or user taps the location pill */}
+              <MapRecenter lat={lat} lon={lon} trigger={recenterKey} />
               {frames.length > 0 && (
                 <RadarLayer frames={frames} frameIndex={frameIndex} />
               )}

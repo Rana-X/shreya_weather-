@@ -186,7 +186,7 @@ export function Home() {
 
         {/* Live radar map */}
         <section>
-          <WeatherRadar lat={lat} lon={lon} />
+          <WeatherRadar lat={lat} lon={lon} locationName={locationName} />
         </section>
 
         {/* Local news */}
