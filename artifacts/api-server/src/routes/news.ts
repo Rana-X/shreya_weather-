@@ -71,8 +71,8 @@ router.get("/news", async (req, res) => {
     const city = geo.city || geo.locality || geo.principalSubdivision || "local";
     const region = geo.principalSubdivision || "";
 
-    // Step 2: Google News RSS for that location
-    const query = encodeURIComponent(`${city} ${region} news`);
+    // Step 2: Google News RSS — weather-focused query for the location
+    const query = encodeURIComponent(`weather ${city} ${region} storm forecast`);
     const rssUrl = `https://news.google.com/rss/search?q=${query}&hl=en-US&gl=US&ceid=US:en`;
     const rssRes = await fetch(rssUrl, {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; Strata/1.0)" },

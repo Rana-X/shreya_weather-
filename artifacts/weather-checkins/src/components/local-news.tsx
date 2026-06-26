@@ -1,4 +1,4 @@
-import { ExternalLink, Newspaper } from "lucide-react";
+import { Cloud, ExternalLink } from "lucide-react";
 import { useLocalNews } from "@/hooks/use-local-news";
 
 interface Props {
@@ -30,16 +30,21 @@ export function LocalNews({ lat, lon }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-2">
-          <Newspaper className="w-4 h-4 text-primary" />
-          <h3 className="font-display font-bold text-foreground text-base">
-            {city && region ? `${city}, ${region}` : "Local News"}
-          </h3>
+          <Cloud className="w-4 h-4 text-primary" />
+          <div>
+            <h3 className="font-display font-bold text-foreground text-base leading-tight">
+              ⛅ Weather News
+            </h3>
+            {city && (
+              <p className="text-[11px] text-muted-foreground leading-tight">
+                Near {city}{region ? `, ${region}` : ""}
+              </p>
+            )}
+          </div>
         </div>
-        {city && (
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-            via Google News
-          </span>
-        )}
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          via Google News
+        </span>
       </div>
 
       <div className="px-5 pb-5">
