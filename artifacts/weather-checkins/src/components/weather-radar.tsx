@@ -197,49 +197,81 @@ export function WeatherRadar({ lat, lon }: Props) {
         </MapContainer>
       </div>
 
-      {/* Radar color key */}
-      <div className="px-5 pt-3 pb-1 space-y-1.5">
-        {/* Rain row */}
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest w-8 shrink-0">Rain</span>
-          <div className="flex items-center gap-1 flex-wrap">
-            {[
-              { color: "#b3f0ff", label: "Drizzle" },
-              { color: "#00c8ff", label: "Light" },
-              { color: "#00d800", label: "Moderate" },
-              { color: "#ffff00", label: "Heavy" },
-              { color: "#ff8800", label: "Intense" },
-              { color: "#ff0000", label: "Severe" },
-              { color: "#cc00cc", label: "Extreme" },
-            ].map(({ color, label }) => (
-              <div key={label} className="flex items-center gap-1">
-                <span
-                  className="inline-block w-3 h-3 rounded-sm shrink-0 border border-black/10"
-                  style={{ backgroundColor: color }}
-                />
-                <span className="text-[10px] text-muted-foreground">{label}</span>
-              </div>
+      {/* Radar color key — accessible design */}
+      <div className="px-5 pt-4 pb-2 space-y-3">
+        {/* Rain intensity — gradient bar with labeled endpoints */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] font-bold text-foreground uppercase tracking-wider">Rain intensity</span>
+            <span className="text-[10px] text-muted-foreground">light → extreme</span>
+          </div>
+          {/* Gradient bar matching RainViewer scheme 6 */}
+          <div
+            className="w-full h-4 rounded-md border border-black/15"
+            style={{
+              background: "linear-gradient(to right, #b3f0ff, #00c8ff, #00d800, #ffff00, #ff8800, #ff0000, #cc00cc)",
+            }}
+            aria-label="Rain intensity scale from light blue (light rain) to purple (extreme rain)"
+          />
+          {/* Labels below the bar */}
+          <div className="flex justify-between mt-1">
+            {["Drizzle", "Light", "Moderate", "Heavy", "Intense", "Severe", "Extreme"].map((l) => (
+              <span key={l} className="text-[9px] font-medium text-muted-foreground">{l}</span>
             ))}
           </div>
         </div>
-        {/* Winter precipitation row */}
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest w-8 shrink-0">Ice</span>
-          <div className="flex items-center gap-1 flex-wrap">
-            {[
-              { color: "#e8f4ff", label: "Snow", shape: "rounded-sm" },
-              { color: "#a8c8e8", label: "Sleet", shape: "rounded-sm" },
-              { color: "#9888cc", label: "Mix", shape: "rounded-sm" },
-              { color: "#7040a0", label: "Hail", shape: "rounded-sm" },
-            ].map(({ color, label, shape }) => (
-              <div key={label} className="flex items-center gap-1">
-                <span
-                  className={`inline-block w-3 h-3 ${shape} shrink-0 border border-black/10`}
-                  style={{ backgroundColor: color }}
-                />
-                <span className="text-[10px] text-muted-foreground">{label}</span>
-              </div>
-            ))}
+
+        {/* Winter precipitation — distinct shapes + colors + labels */}
+        <div>
+          <span className="text-[11px] font-bold text-foreground uppercase tracking-wider block mb-1.5">
+            Snow &amp; ice
+          </span>
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Snow — circle (round snowflake-like) */}
+            <div className="flex items-center gap-1.5">
+              <span
+                className="inline-flex items-center justify-center w-5 h-5 rounded-full border-2 border-slate-400 shrink-0"
+                style={{ backgroundColor: "#ddefff" }}
+                aria-label="Snow"
+              >
+                <span className="text-[8px] font-black text-slate-600">❄</span>
+              </span>
+              <span className="text-[11px] font-semibold text-foreground">Snow</span>
+            </div>
+            {/* Sleet — diamond shape */}
+            <div className="flex items-center gap-1.5">
+              <span
+                className="inline-block w-4 h-4 shrink-0 border-2 border-slate-500 rotate-45"
+                style={{ backgroundColor: "#7ab0d8" }}
+                aria-label="Sleet"
+              />
+              <span className="text-[11px] font-semibold text-foreground">Sleet</span>
+            </div>
+            {/* Mix — half-circle / semi pattern */}
+            <div className="flex items-center gap-1.5">
+              <span
+                className="inline-block w-5 h-5 shrink-0 border-2 border-purple-400"
+                style={{
+                  backgroundColor: "#9888cc",
+                  borderRadius: "50% 50% 50% 0",
+                  transform: "rotate(-45deg)",
+                }}
+                aria-label="Mixed precipitation"
+              />
+              <span className="text-[11px] font-semibold text-foreground">Mix</span>
+            </div>
+            {/* Hail — hexagon-ish (pentagon via border-radius trick) */}
+            <div className="flex items-center gap-1.5">
+              <span
+                className="inline-block w-5 h-5 shrink-0 border-2 border-purple-700"
+                style={{
+                  backgroundColor: "#5c1f8a",
+                  borderRadius: "30% 70% 70% 30% / 30% 30% 70% 70%",
+                }}
+                aria-label="Hail"
+              />
+              <span className="text-[11px] font-semibold text-foreground">Hail</span>
+            </div>
           </div>
         </div>
       </div>
