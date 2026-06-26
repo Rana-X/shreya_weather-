@@ -197,6 +197,32 @@ export function WeatherRadar({ lat, lon }: Props) {
         </MapContainer>
       </div>
 
+      {/* Radar color key */}
+      <div className="px-5 pt-3 pb-1">
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest shrink-0">Key</span>
+          <div className="flex items-center gap-1 flex-wrap">
+            {[
+              { color: "#b3f0ff", label: "Drizzle" },
+              { color: "#00c8ff", label: "Light" },
+              { color: "#00d800", label: "Moderate" },
+              { color: "#ffff00", label: "Heavy" },
+              { color: "#ff8800", label: "Intense" },
+              { color: "#ff0000", label: "Severe" },
+              { color: "#cc00cc", label: "Extreme" },
+            ].map(({ color, label }) => (
+              <div key={label} className="flex items-center gap-1">
+                <span
+                  className="inline-block w-3 h-3 rounded-sm shrink-0 border border-black/10"
+                  style={{ backgroundColor: color }}
+                />
+                <span className="text-[10px] text-muted-foreground">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Progress bar + scrubber dots */}
       <div className="px-5 py-3 border-t border-border space-y-2">
         {/* Continuous progress bar */}
