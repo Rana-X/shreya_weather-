@@ -3,10 +3,13 @@ import { CorrectionFeed } from "@/components/correction-feed";
 import { CreateCorrectionForm, CreateCorrectionDialog } from "@/components/create-correction-form";
 import { PrecipitationChart } from "@/components/precipitation-chart";
 import { WeatherRadar } from "@/components/weather-radar";
+import { WeatherAlerts } from "@/components/weather-alerts";
 import { useWeather } from "@/hooks/use-weather";
+import { useAlerts } from "@/hooks/use-alerts";
 
 export function Home() {
   const { hourlyPrecip, precipitationChance, lat, lon, loading } = useWeather();
+  const { alerts, supported: alertsSupported } = useAlerts(lat, lon);
 
   return (
     <div className="min-h-[100dvh] bg-background selection:bg-primary/20 selection:text-primary pb-24">
@@ -23,6 +26,21 @@ export function Home() {
         <section>
           <OfficialWeather />
         </section>
+
+        {/* Severe weather alerts */}
+        {alertsSupported && (
+          alerts.length > 0
+            ? <WeatherAlerts alerts={alerts} />
+            : (
+              <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+                </span>
+                <p className="text-sm font-semibold text-green-700 dark:text-green-400">No active weather alerts for your area</p>
+              </div>
+            )
+        )}
 
         {/* Precipitation chart */}
         {!loading && (
