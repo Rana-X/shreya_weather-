@@ -198,9 +198,10 @@ export function WeatherRadar({ lat, lon }: Props) {
       </div>
 
       {/* Radar color key */}
-      <div className="px-5 pt-3 pb-1">
+      <div className="px-5 pt-3 pb-1 space-y-1.5">
+        {/* Rain row */}
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest shrink-0">Key</span>
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest w-8 shrink-0">Rain</span>
           <div className="flex items-center gap-1 flex-wrap">
             {[
               { color: "#b3f0ff", label: "Drizzle" },
@@ -214,6 +215,26 @@ export function WeatherRadar({ lat, lon }: Props) {
               <div key={label} className="flex items-center gap-1">
                 <span
                   className="inline-block w-3 h-3 rounded-sm shrink-0 border border-black/10"
+                  style={{ backgroundColor: color }}
+                />
+                <span className="text-[10px] text-muted-foreground">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Winter precipitation row */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest w-8 shrink-0">Ice</span>
+          <div className="flex items-center gap-1 flex-wrap">
+            {[
+              { color: "#e8f4ff", label: "Snow", shape: "rounded-sm" },
+              { color: "#a8c8e8", label: "Sleet", shape: "rounded-sm" },
+              { color: "#9888cc", label: "Mix", shape: "rounded-sm" },
+              { color: "#7040a0", label: "Hail", shape: "rounded-sm" },
+            ].map(({ color, label, shape }) => (
+              <div key={label} className="flex items-center gap-1">
+                <span
+                  className={`inline-block w-3 h-3 ${shape} shrink-0 border border-black/10`}
                   style={{ backgroundColor: color }}
                 />
                 <span className="text-[10px] text-muted-foreground">{label}</span>
