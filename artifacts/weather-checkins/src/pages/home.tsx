@@ -6,6 +6,7 @@ import { WeatherRadar } from "@/components/weather-radar";
 import { WeatherAlerts } from "@/components/weather-alerts";
 import { WeatherDetails } from "@/components/weather-details";
 import { WeeklyForecast } from "@/components/weekly-forecast";
+import { HourlyForecastStrip } from "@/components/hourly-forecast";
 import { useWeather } from "@/hooks/use-weather";
 import { useAlerts } from "@/hooks/use-alerts";
 import { useAirQuality } from "@/hooks/use-air-quality";

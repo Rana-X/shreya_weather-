@@ -6,6 +6,16 @@ export interface HourlyPrecip {
   probability: number;
 }
 
+export interface HourlyForecast {
+  time: string;
+  label: string;   // "Now", "1 PM", "2 AM", …
+  temp: number;
+  type: CorrectionOfficialWeatherType;
+  precipChance: number;
+  isNow: boolean;
+  isMidnight: boolean; // marks day boundary
+}
+
 export interface DayForecast {
   date: string;        // "2026-06-27"
   dayName: string;     // "Today", "Mon", "Tue", …
@@ -23,6 +33,7 @@ export interface WeatherData {
   type: CorrectionOfficialWeatherType;
   precipitationChance: number;
   hourlyPrecip: HourlyPrecip[];
+  hourlyForecast: HourlyForecast[];
   uvIndex: number;
   dewPoint: number;
   pressure: number;
@@ -85,7 +96,7 @@ const fetchWeatherData = async (lat: number, lon: number): Promise<WeatherData> 
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,` +
     `relative_humidity_2m,precipitation_probability,dew_point_2m,surface_pressure` +
-    `&hourly=precipitation_probability,visibility,uv_index` +
+    `&hourly=precipitation_probability,visibility,uv_index,temperature_2m,weather_code` +
     `&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max` +
     `&wind_speed_unit=mph&temperature_unit=fahrenheit&forecast_days=7&timezone=auto`;
 
