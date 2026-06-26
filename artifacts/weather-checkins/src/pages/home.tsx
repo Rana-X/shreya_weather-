@@ -4,12 +4,16 @@ import { CreateCorrectionForm, CreateCorrectionDialog } from "@/components/creat
 import { PrecipitationChart } from "@/components/precipitation-chart";
 import { WeatherRadar } from "@/components/weather-radar";
 import { WeatherAlerts } from "@/components/weather-alerts";
+import { WeatherDetails } from "@/components/weather-details";
 import { useWeather } from "@/hooks/use-weather";
 import { useAlerts } from "@/hooks/use-alerts";
+import { useAirQuality } from "@/hooks/use-air-quality";
 
 export function Home() {
-  const { hourlyPrecip, precipitationChance, lat, lon, loading } = useWeather();
+  const weather = useWeather();
+  const { hourlyPrecip, precipitationChance, lat, lon, loading } = weather;
   const { alerts, supported: alertsSupported } = useAlerts(lat, lon);
+  const airQuality = useAirQuality(lat, lon);
 
   return (
     <div className="min-h-[100dvh] bg-background selection:bg-primary/20 selection:text-primary pb-24">
@@ -40,6 +44,13 @@ export function Home() {
                 <p className="text-sm font-semibold text-green-700 dark:text-green-400">No active weather alerts for your area</p>
               </div>
             )
+        )}
+
+        {/* Weather details grid */}
+        {!loading && (
+          <section className="bg-card rounded-2xl border border-border p-5">
+            <WeatherDetails weather={weather} airQuality={airQuality} />
+          </section>
         )}
 
         {/* Precipitation chart */}

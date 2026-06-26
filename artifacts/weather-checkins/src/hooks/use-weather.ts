@@ -8,11 +8,19 @@ export interface HourlyPrecip {
 
 export interface WeatherData {
   temperature: number;
+  feelsLike: number;
   windSpeed: number;
   humidity: number;
   type: CorrectionOfficialWeatherType;
   precipitationChance: number;
   hourlyPrecip: HourlyPrecip[];
+  uvIndex: number;
+  dewPoint: number;
+  pressure: number;
+  visibility: number; // miles
+  moonPhase: number; // 0–1
+  sunrise: string;
+  sunset: string;
   loading: boolean;
   error: string | null;
   lat: number;
@@ -33,27 +41,67 @@ const mapWeatherCode = (code: number, windSpeed: number): CorrectionOfficialWeat
   return "cloudy";
 };
 
+const fmtTime = (iso: string) => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? "—" : d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+};
+
+// Calculate moon phase (0–1) from date using the known lunar cycle
+const calcMoonPhase = (date: Date): number => {
+  const knownNewMoon = new Date("2000-01-06T18:14:00Z");
+  const lunarCycleDays = 29.530588853;
+  const elapsed = (date.getTime() - knownNewMoon.getTime()) / 86400000;
+  const phase = ((elapsed % lunarCycleDays) + lunarCycleDays) % lunarCycleDays;
+  return phase / lunarCycleDays; // 0 = new moon, 0.5 = full moon
+};
+
+// Find which hourly index best matches "now"
+const currentHourIndex = (times: string[]): number => {
+  const now = Date.now();
+  let best = 0;
+  let bestDiff = Infinity;
+  for (let i = 0; i < times.length; i++) {
+    const diff = Math.abs(new Date(times[i]).getTime() - now);
+    if (diff < bestDiff) { bestDiff = diff; best = i; }
+  }
+  return best;
+};
+
 const fetchWeatherData = async (lat: number, lon: number): Promise<WeatherData> => {
-  const res = await fetch(
+  // current: variables Open-Meteo supports as `current`
+  // hourly:  visibility & uv_index are only hourly in Open-Meteo
+  const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-    `&current=temperature_2m,weather_code,wind_speed_10m,relative_humidity_2m,precipitation_probability` +
-    `&hourly=precipitation_probability` +
-    `&wind_speed_unit=mph&temperature_unit=fahrenheit&forecast_days=2&timezone=auto`
-  );
-  if (!res.ok) throw new Error("Weather API failed");
+    `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,` +
+    `relative_humidity_2m,precipitation_probability,dew_point_2m,surface_pressure` +
+    `&hourly=precipitation_probability,visibility,uv_index` +
+    `&daily=sunrise,sunset` +
+    `&wind_speed_unit=mph&temperature_unit=fahrenheit&forecast_days=2&timezone=auto`;
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Weather API ${res.status}`);
   const json = await res.json();
 
-  const temp = json.current.temperature_2m;
-  const wind = json.current.wind_speed_10m;
-  const code = json.current.weather_code;
-  const humidity = json.current.relative_humidity_2m ?? 0;
-  const precipChance = json.current.precipitation_probability ?? 0;
-
-  // Get next 12 hours of hourly precipitation probability starting from now
-  const now = new Date();
+  const cur = json.current;
+  const daily = json.daily ?? {};
   const hourlyTimes: string[] = json.hourly?.time ?? [];
   const hourlyProb: number[] = json.hourly?.precipitation_probability ?? [];
+  const hourlyVis: number[] = json.hourly?.visibility ?? [];
+  const hourlyUV: number[] = json.hourly?.uv_index ?? [];
 
+  const temp = cur.temperature_2m ?? 0;
+  const wind = cur.wind_speed_10m ?? 0;
+  const code = cur.weather_code ?? 0;
+
+  // Current hourly index for visibility & UV
+  const hIdx = currentHourIndex(hourlyTimes);
+  const visibilityM = hourlyVis[hIdx] ?? 0;
+  const visibilityMi = Math.round((visibilityM / 1609.34) * 10) / 10;
+  const uvIndex = Math.round(hourlyUV[hIdx] ?? 0);
+
+  // Next 12 hours of precipitation probability
+  const now = new Date();
   const hourlyPrecip: HourlyPrecip[] = [];
   let count = 0;
   for (let i = 0; i < hourlyTimes.length && count < 12; i++) {
@@ -68,11 +116,19 @@ const fetchWeatherData = async (lat: number, lon: number): Promise<WeatherData> 
 
   return {
     temperature: Math.round(temp),
+    feelsLike: Math.round(cur.apparent_temperature ?? temp),
     windSpeed: Math.round(wind),
-    humidity: Math.round(humidity),
+    humidity: Math.round(cur.relative_humidity_2m ?? 0),
     type: mapWeatherCode(code, wind),
-    precipitationChance: Math.round(precipChance),
+    precipitationChance: Math.round(cur.precipitation_probability ?? 0),
     hourlyPrecip,
+    uvIndex,
+    dewPoint: Math.round(cur.dew_point_2m ?? 0),
+    pressure: Math.round(cur.surface_pressure ?? 0),
+    visibility: visibilityMi,
+    moonPhase: calcMoonPhase(new Date()),
+    sunrise: fmtTime(daily.sunrise?.[0] ?? ""),
+    sunset: fmtTime(daily.sunset?.[0] ?? ""),
     loading: false,
     error: null,
     lat,
@@ -83,11 +139,19 @@ const fetchWeatherData = async (lat: number, lon: number): Promise<WeatherData> 
 export function useWeather() {
   const [data, setData] = useState<WeatherData>({
     temperature: 0,
+    feelsLike: 0,
     windSpeed: 0,
     humidity: 0,
     type: "sunny",
     precipitationChance: 0,
     hourlyPrecip: [],
+    uvIndex: 0,
+    dewPoint: 0,
+    pressure: 0,
+    visibility: 0,
+    moonPhase: 0,
+    sunrise: "—",
+    sunset: "—",
     loading: true,
     error: null,
     lat: NYC_LAT,
@@ -97,7 +161,6 @@ export function useWeather() {
   useEffect(() => {
     let cancelled = false;
 
-    // Immediately fetch with fallback location
     fetchWeatherData(NYC_LAT, NYC_LON)
       .then((result) => { if (!cancelled) setData(result); })
       .catch(() => {
@@ -105,7 +168,6 @@ export function useWeather() {
           setData((prev) => ({ ...prev, loading: false, error: "Could not load weather" }));
       });
 
-    // Try real location in background
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
