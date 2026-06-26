@@ -3,13 +3,15 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Neighbor Weather Check-ins API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: checkins
+    description: Weather check-in operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,85 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /checkins:
+    get:
+      operationId: listCheckins
+      tags: [checkins]
+      summary: List recent weather check-ins
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: weatherType
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of check-ins
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Checkin"
+    post:
+      operationId: createCheckin
+      tags: [checkins]
+      summary: Post a new weather check-in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckinInput"
+      responses:
+        "201":
+          description: Created check-in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Checkin"
+        "400":
+          description: Bad request
+
+  /checkins/summary:
+    get:
+      operationId: getCheckinSummary
+      tags: [checkins]
+      summary: Get current weather summary counts by type
+      responses:
+        "200":
+          description: Summary of current conditions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckinSummary"
+
+  /checkins/{id}/agree:
+    post:
+      operationId: agreeWithCheckin
+      tags: [checkins]
+      summary: Agree with a weather check-in
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated check-in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Checkin"
+        "404":
+          description: Not found
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +115,54 @@ components:
       required:
         - status
 
+    Checkin:
+      type: object
+      required: [id, weatherType, createdAt, agrees]
+      properties:
+        id:
+          type: integer
+        weatherType:
+          type: string
+          enum: [sunny, cloudy, rainy, stormy, windy, snowy, foggy]
+        description:
+          type: ["string", "null"]
+        locationName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        agrees:
+          type: integer
+
+    CheckinInput:
+      type: object
+      required: [weatherType]
+      properties:
+        weatherType:
+          type: string
+          enum: [sunny, cloudy, rainy, stormy, windy, snowy, foggy]
+        description:
+          type: string
+        locationName:
+          type: string
+
+    CheckinSummaryItem:
+      type: object
+      required: [weatherType, count]
+      properties:
+        weatherType:
+          type: string
+        count:
+          type: integer
+
+    CheckinSummary:
+      type: object
+      required: [items, totalToday, mostCommon]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CheckinSummaryItem"
+        totalToday:
+          type: integer
+        mostCommon:
+          type: ["string", "null"]
