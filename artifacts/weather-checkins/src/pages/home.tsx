@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Show, useClerk, useUser } from "@clerk/react";
 import { useLocation } from "wouter";
 import { OfficialWeather } from "@/components/official-weather";
@@ -10,9 +11,12 @@ import { WeatherDetails } from "@/components/weather-details";
 import { WeeklyForecast } from "@/components/weekly-forecast";
 import { HourlyForecastStrip } from "@/components/hourly-forecast";
 import { LocalNews } from "@/components/local-news";
+import { CitySearch } from "@/components/city-search";
 import { useWeather } from "@/hooks/use-weather";
 import { useAlerts } from "@/hooks/use-alerts";
 import { useAirQuality } from "@/hooks/use-air-quality";
+import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
+import { type CityResult } from "@/hooks/use-city-search";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -70,26 +74,50 @@ function SignInPrompt() {
 }
 
 export function Home() {
-  const weather = useWeather();
+  const [, setLocation] = useLocation();
+
+  // Selected city: null = use GPS / default
+  const [selectedCity, setSelectedCity] = useState<CityResult | null>(null);
+
+  const locationOverride = selectedCity
+    ? { lat: selectedCity.lat, lon: selectedCity.lon }
+    : null;
+
+  const weather = useWeather(locationOverride);
   const { hourlyPrecip, precipitationChance, lat, lon, loading } = weather;
   const { alerts, supported: alertsSupported } = useAlerts(lat, lon);
   const airQuality = useAirQuality(lat, lon);
-  const [, setLocation] = useLocation();
+
+  // Reverse-geocode GPS position so we can show a human-readable name
+  // Only runs when no city is selected (GPS mode)
+  const gpsName = useReverseGeocode(selectedCity ? 0 : lat, selectedCity ? 0 : lon);
+
+  // The name to show: searched city name takes priority, then GPS name
+  const locationName = selectedCity ? selectedCity.display : gpsName;
 
   return (
     <div className="min-h-[100dvh] bg-background selection:bg-primary/20 selection:text-primary pb-24">
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
-          <h1 className="text-xl font-display font-extrabold text-foreground tracking-tight">
+        <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+          <h1 className="text-xl font-display font-extrabold text-foreground tracking-tight shrink-0">
             Strata
           </h1>
+
+          {/* Location search — centre of header */}
+          <div className="flex-1 flex justify-center">
+            <CitySearch
+              selectedCity={selectedCity}
+              onSelect={(city) => setSelectedCity(city)}
+              onMyLocation={() => setSelectedCity(null)}
+            />
+          </div>
 
           <Show when="signed-in">
             <UserMenu />
           </Show>
 
           <Show when="signed-out">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => setLocation("/sign-in")}
                 className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-muted"
@@ -108,9 +136,9 @@ export function Home() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
-        {/* Official forecast */}
+        {/* Official forecast — now includes location name */}
         <section>
-          <OfficialWeather />
+          <OfficialWeather weather={weather} locationName={locationName} />
         </section>
 
         {/* Severe weather alerts */}

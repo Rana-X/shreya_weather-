@@ -1,9 +1,14 @@
-import { useWeather } from "@/hooks/use-weather";
+import { type WeatherData } from "@/hooks/use-weather";
 import { WeatherIcon, getWeatherLabel } from "./weather-icon";
-import { Loader2, Wind, Thermometer, Droplets } from "lucide-react";
+import { Loader2, Wind, Thermometer, Droplets, MapPin } from "lucide-react";
 
-export function OfficialWeather() {
-  const { temperature, windSpeed, humidity, precipitationChance, type, loading, error } = useWeather();
+interface Props {
+  weather: WeatherData;
+  locationName?: string;
+}
+
+export function OfficialWeather({ weather, locationName }: Props) {
+  const { temperature, windSpeed, humidity, precipitationChance, type, loading, error } = weather;
 
   if (loading) {
     return (
@@ -28,6 +33,14 @@ export function OfficialWeather() {
       <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
 
       <div className="flex flex-col items-center text-center relative z-10">
+        {/* Location name */}
+        {locationName && (
+          <div className="flex items-center gap-1.5 mb-4 text-muted-foreground">
+            <MapPin className="w-4 h-4 text-primary" />
+            <span className="text-base font-semibold text-foreground">{locationName}</span>
+          </div>
+        )}
+
         <WeatherIcon weatherType={type} className="w-24 h-24 mb-6" />
         <h2 className="text-5xl font-display font-extrabold text-foreground tracking-tight mb-2">
           {getWeatherLabel(type)}
