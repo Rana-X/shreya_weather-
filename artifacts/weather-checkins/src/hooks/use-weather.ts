@@ -207,7 +207,12 @@ const fetchWeatherData = async (lat: number, lon: number): Promise<WeatherData> 
   };
 };
 
-export function useWeather() {
+interface LocationOverride {
+  lat: number;
+  lon: number;
+}
+
+export function useWeather(override?: LocationOverride | null) {
   const [data, setData] = useState<WeatherData>({
     temperature: 0,
     feelsLike: 0,
@@ -233,29 +238,41 @@ export function useWeather() {
 
   useEffect(() => {
     let cancelled = false;
+    setData((prev) => ({ ...prev, loading: true, error: null }));
 
-    fetchWeatherData(NYC_LAT, NYC_LON)
-      .then((result) => { if (!cancelled) setData(result); })
-      .catch(() => {
-        if (!cancelled)
-          setData((prev) => ({ ...prev, loading: false, error: "Could not load weather" }));
-      });
+    if (override) {
+      // Use the explicit location override (searched city)
+      fetchWeatherData(override.lat, override.lon)
+        .then((result) => { if (!cancelled) setData(result); })
+        .catch(() => {
+          if (!cancelled)
+            setData((prev) => ({ ...prev, loading: false, error: "Could not load weather" }));
+        });
+    } else {
+      // Default: try GPS first, fall back to NYC
+      fetchWeatherData(NYC_LAT, NYC_LON)
+        .then((result) => { if (!cancelled) setData(result); })
+        .catch(() => {
+          if (!cancelled)
+            setData((prev) => ({ ...prev, loading: false, error: "Could not load weather" }));
+        });
 
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          if (cancelled) return;
-          fetchWeatherData(pos.coords.latitude, pos.coords.longitude)
-            .then((result) => { if (!cancelled) setData(result); })
-            .catch(() => {});
-        },
-        () => {},
-        { timeout: 5000, maximumAge: 60000 }
-      );
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            if (cancelled) return;
+            fetchWeatherData(pos.coords.latitude, pos.coords.longitude)
+              .then((result) => { if (!cancelled) setData(result); })
+              .catch(() => {});
+          },
+          () => {},
+          { timeout: 5000, maximumAge: 60000 }
+        );
+      }
     }
 
     return () => { cancelled = true; };
-  }, []);
+  }, [override?.lat, override?.lon]);
 
   return data;
 }
