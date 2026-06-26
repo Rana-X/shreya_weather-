@@ -162,7 +162,7 @@ function ClerkProviderWithRoutes() {
         },
         signUp: {
           start: {
-            title: "Join Neighbor Weather",
+            title: "Join Strata",
             subtitle: "Create an account to start reporting what you see outside",
           },
         },

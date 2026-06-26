@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "Neighbor Weather Check-ins"
+title = "Strata"
 version = "1.0.0"
 id = "artifacts/weather-checkins"
 router = "path"

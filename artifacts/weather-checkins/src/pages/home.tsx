@@ -80,7 +80,7 @@ export function Home() {
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border shadow-sm">
         <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
           <h1 className="text-xl font-display font-extrabold text-foreground tracking-tight">
-            Neighbor Weather
+            Strata
           </h1>
 
           <Show when="signed-in">
