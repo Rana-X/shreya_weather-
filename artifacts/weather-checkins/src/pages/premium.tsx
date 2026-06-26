@@ -4,7 +4,7 @@ import { Show, useUser } from "@clerk/react";
 import { useSubscription } from "@/hooks/use-subscription";
 import {
   Check, Star, Wind, Thermometer, Calendar, MapPin,
-  Bell, Zap, ArrowLeft, Loader2, Crown,
+  Bell, Zap, ArrowLeft, Loader2, Crown, XCircle,
 } from "lucide-react";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -240,7 +240,15 @@ export function PremiumPage() {
                 className="w-full py-3 rounded-full border border-border text-sm font-bold hover:bg-muted transition-colors flex items-center justify-center gap-2"
               >
                 {managingBilling && <Loader2 className="w-4 h-4 animate-spin" />}
-                Manage billing
+                Manage billing &amp; payment
+              </button>
+              <button
+                onClick={openPortal}
+                disabled={managingBilling}
+                className="w-full py-2.5 rounded-full border border-red-200 dark:border-red-900 text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors flex items-center justify-center gap-2"
+              >
+                <XCircle className="w-4 h-4" />
+                Cancel subscription
               </button>
             </div>
           ) : (
