@@ -3,15 +3,15 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: Neighbor Weather Check-ins API
+  description: Neighbor Weather Corrections API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
-  - name: checkins
-    description: Weather check-in operations
+  - name: corrections
+    description: Weather correction operations
 paths:
   /healthz:
     get:
@@ -27,11 +27,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
 
-  /checkins:
+  /corrections:
     get:
-      operationId: listCheckins
-      tags: [checkins]
-      summary: List recent weather check-ins
+      operationId: listCorrections
+      tags: [corrections]
+      summary: List recent weather corrections from neighbors
       parameters:
         - in: query
           name: limit
@@ -39,56 +39,60 @@ paths:
             type: integer
             default: 20
         - in: query
-          name: weatherType
+          name: lat
           schema:
-            type: string
+            type: number
+        - in: query
+          name: lon
+          schema:
+            type: number
       responses:
         "200":
-          description: List of check-ins
+          description: List of corrections
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Checkin"
+                  $ref: "#/components/schemas/Correction"
     post:
-      operationId: createCheckin
-      tags: [checkins]
-      summary: Post a new weather check-in
+      operationId: createCorrection
+      tags: [corrections]
+      summary: Submit a weather correction
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CheckinInput"
+              $ref: "#/components/schemas/CorrectionInput"
       responses:
         "201":
-          description: Created check-in
+          description: Created correction
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Checkin"
+                $ref: "#/components/schemas/Correction"
         "400":
           description: Bad request
 
-  /checkins/summary:
+  /corrections/summary:
     get:
-      operationId: getCheckinSummary
-      tags: [checkins]
-      summary: Get current weather summary counts by type
+      operationId: getCorrectionSummary
+      tags: [corrections]
+      summary: Get summary of active corrections vs official forecast
       responses:
         "200":
-          description: Summary of current conditions
+          description: Correction summary
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CheckinSummary"
+                $ref: "#/components/schemas/CorrectionSummary"
 
-  /checkins/{id}/agree:
+  /corrections/{id}/agree:
     post:
-      operationId: agreeWithCheckin
-      tags: [checkins]
-      summary: Agree with a weather check-in
+      operationId: agreeWithCorrection
+      tags: [corrections]
+      summary: Agree with a neighbor correction
       parameters:
         - in: path
           name: id
@@ -97,11 +101,11 @@ paths:
             type: integer
       responses:
         "200":
-          description: Updated check-in
+          description: Updated correction
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Checkin"
+                $ref: "#/components/schemas/Correction"
         "404":
           description: Not found
 
@@ -115,13 +119,16 @@ components:
       required:
         - status
 
-    Checkin:
+    Correction:
       type: object
-      required: [id, weatherType, createdAt, agrees]
+      required: [id, actualWeatherType, officialWeatherType, createdAt, agrees]
       properties:
         id:
           type: integer
-        weatherType:
+        actualWeatherType:
+          type: string
+          enum: [sunny, cloudy, rainy, stormy, windy, snowy, foggy]
+        officialWeatherType:
           type: string
           enum: [sunny, cloudy, rainy, stormy, windy, snowy, foggy]
         description:
@@ -133,11 +140,14 @@ components:
         agrees:
           type: integer
 
-    CheckinInput:
+    CorrectionInput:
       type: object
-      required: [weatherType]
+      required: [actualWeatherType, officialWeatherType]
       properties:
-        weatherType:
+        actualWeatherType:
+          type: string
+          enum: [sunny, cloudy, rainy, stormy, windy, snowy, foggy]
+        officialWeatherType:
           type: string
           enum: [sunny, cloudy, rainy, stormy, windy, snowy, foggy]
         description:
@@ -145,24 +155,13 @@ components:
         locationName:
           type: string
 
-    CheckinSummaryItem:
+    CorrectionSummary:
       type: object
-      required: [weatherType, count]
+      required: [totalCorrections, activeDisagreements, mostReportedActual]
       properties:
-        weatherType:
-          type: string
-        count:
+        totalCorrections:
           type: integer
-
-    CheckinSummary:
-      type: object
-      required: [items, totalToday, mostCommon]
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/CheckinSummaryItem"
-        totalToday:
+        activeDisagreements:
           type: integer
-        mostCommon:
+        mostReportedActual:
           type: ["string", "null"]

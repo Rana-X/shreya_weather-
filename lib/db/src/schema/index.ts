@@ -1,1 +1,1 @@
-export * from "./checkins";
+export * from "./corrections";

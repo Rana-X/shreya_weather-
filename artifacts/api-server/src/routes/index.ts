@@ -1,10 +1,10 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
-import checkinsRouter from "./checkins";
+import correctionsRouter from "./corrections";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
-router.use(checkinsRouter);
+router.use(correctionsRouter);
 
 export default router;
