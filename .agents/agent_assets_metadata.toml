@@ -11,3 +11,9 @@ id = "2E--EgMrWb3ZVYSToMXpG"
 uri = "file://artifacts/weather-checkins/public/favicon.svg"
 type = "image"
 title = "Strata Icon — updated"
+
+[[outputs]]
+id = "Y-Ar093h-gmEQhZ9E_Crh"
+uri = "file://artifacts/strata-mobile/assets/images/icon.png"
+type = "image"
+title = "WeatherAxis App Icon (1024×1024)"
