@@ -91,12 +91,32 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
   const getGPSLocation = useCallback(async () => {
     try {
       if (Platform.OS === "web") {
-        if (!navigator.geolocation) {
+        // Default fallback: New York City — used when geolocation is denied or unavailable
+        const DEFAULT_LAT = 40.7128;
+        const DEFAULT_LON = -74.006;
+        const DEFAULT_CITY = "New York, NY";
+
+        const applyFallback = () => {
+          setLat((prev) => (prev === null ? DEFAULT_LAT : prev));
+          setLon((prev) => (prev === null ? DEFAULT_LON : prev));
+          setCityName((prev) =>
+            prev === "Finding your location..." ? DEFAULT_CITY : prev
+          );
           setIsLoading(false);
+        };
+
+        // Fallback fires after 6 s if geolocation hasn't resolved
+        const timeout = setTimeout(applyFallback, 6000);
+
+        if (!navigator.geolocation) {
+          clearTimeout(timeout);
+          applyFallback();
           return;
         }
+
         navigator.geolocation.getCurrentPosition(
           async (pos) => {
+            clearTimeout(timeout);
             const { latitude, longitude } = pos.coords;
             setGpsLat(latitude);
             setGpsLon(longitude);
@@ -108,7 +128,10 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
             setCityName(name);
             setIsLoading(false);
           },
-          () => setIsLoading(false)
+          () => {
+            clearTimeout(timeout);
+            applyFallback();
+          }
         );
       } else {
         const { status } = await Location.requestForegroundPermissionsAsync();

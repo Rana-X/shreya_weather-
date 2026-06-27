@@ -6,10 +6,10 @@ import {
   Text,
   View,
 } from "react-native";
-import { WebView } from "react-native-webview";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useLocation } from "@/context/LocationContext";
+import { RadarMap } from "@/components/RadarMap";
 
 function buildMapHtml(lat: number, lon: number, isDark: boolean): string {
   return `<!DOCTYPE html>
@@ -353,21 +353,7 @@ export default function RadarScreen() {
         </View>
       </View>
 
-      <WebView
-        style={styles.map}
-        source={{ html }}
-        originWhitelist={["*"]}
-        javaScriptEnabled
-        domStorageEnabled
-        allowsInlineMediaPlayback
-        mediaPlaybackRequiresUserAction={false}
-        scrollEnabled={false}
-        bounces={false}
-        overScrollMode="never"
-        showsVerticalScrollIndicator={false}
-        showsHorizontalScrollIndicator={false}
-        onError={(e) => console.warn("WebView error", e.nativeEvent)}
-      />
+      <RadarMap html={html} />
     </View>
   );
 }
