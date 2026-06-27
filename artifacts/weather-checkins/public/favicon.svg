@@ -1,82 +1,76 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <!-- App background: sky blue gradient -->
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#7dd3fc"/>
-      <stop offset="100%" stop-color="#0ea5e9"/>
-    </linearGradient>
-    <!-- Cloud: crisp white fading to pale blue at base -->
-    <linearGradient id="cloud" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#dff0fb"/>
-    </linearGradient>
-    <!-- Lightning bolt: bright lemon → warm amber -->
-    <linearGradient id="bolt" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#fff176"/>
-      <stop offset="100%" stop-color="#f59e0b"/>
-    </linearGradient>
-    <!-- Cloud drop shadow -->
-    <filter id="cShadow" x="-10%" y="-10%" width="125%" height="135%">
-      <feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#0c4a6e" flood-opacity="0.22"/>
-    </filter>
-    <!-- Bolt glow: layer blurred copy behind sharp bolt -->
-    <filter id="bGlow" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-    <!-- S depth shadow -->
-    <filter id="tShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="3" stdDeviation="6" flood-color="#3b0764" flood-opacity="0.5"/>
-    </filter>
-  </defs>
+  <!--
+    Strata icon: white cloud (3 bumps) · bold dark outline · purple S · yellow bolt.
+    Transparent background — background-color is set in manifest.json.
 
-  <!-- Background rounded square -->
-  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+    Layer order:
+      1. Cloud white fill  (background)
+      2. Lightning bolt    (yellow, below cloud)
+      3. Purple S          (text, sits in front of bolt)
+      4. Cloud stroke      (drawn last so the outline frames everything)
+  -->
 
-  <!-- Cloud: four overlapping circles form the puffy top;
-       a rectangle fills the flat body beneath them.        -->
-  <g filter="url(#cShadow)">
-    <circle cx="152" cy="222" r="64"  fill="url(#cloud)"/>
-    <circle cx="228" cy="178" r="82"  fill="url(#cloud)"/>
-    <circle cx="322" cy="184" r="76"  fill="url(#cloud)"/>
-    <circle cx="382" cy="222" r="58"  fill="url(#cloud)"/>
-    <!-- Flat body — fills the gaps between bumps -->
-    <rect x="88" y="220" width="336" height="94" fill="url(#cloud)"/>
-    <!-- Rounded bottom edge -->
-    <rect x="88" y="278" width="336" height="36" rx="18" fill="url(#cloud)"/>
-  </g>
+  <!-- ── Cloud path ───────────────────────────────────────────────────────────
+       Three smooth cubic-bezier bumps (R, C, L) + flat base with rounded corners.
+       All transitions are C1-continuous (matching tangents at every junction).
 
-  <!-- Lightning bolt — classic 6-point zigzag.
-       Roots inside the cloud (~y 250), tip exits far below.  -->
-  <g filter="url(#bGlow)">
-    <path
-      d="M 302 248
-         L 260 348
-         L 290 348
-         L 242 452
-         L 325 334
-         L 290 334
-         Z"
-      fill="url(#bolt)"
-      stroke="#b45309"
-      stroke-width="5"
-      stroke-linejoin="round"
-    />
-  </g>
+       Key y-coords:  R-bump top ≈ 188 · C-bump top ≈ 110 · L-bump top ≈ 190
+                      R-C valley ≈ 212 · C-L valley ≈ 215
+                      Cloud base ≈ 335
+  ──────────────────────────────────────────────────────────────────────────── -->
+  <path id="cloud-shape"
+    d="M 118 310
+       Q 118 335 143 335
+       L 375 335
+       Q 402 335 402 310
+       L 402 255
+       C 402 188 388 178 375 188
+       C 362 198 342 218 330 212
+       C 318 206 296 108 256 110
+       C 216 112 200 220 182 215
+       C 164 210 162 190 138 190
+       C 118 190 118 248 118 268
+       L 118 310 Z"
+    fill="white"
+  />
 
-  <!-- Purple S — bold, centered slightly left so the bolt is visible beside it -->
+  <!-- ── Lightning bolt ───────────────────────────────────────────────────────
+       Classic 6-point zigzag, centred around x ≈ 256, emerges from cloud base.
+  ──────────────────────────────────────────────────────────────────────────── -->
+  <polygon
+    points="238,335 270,335 256,402 294,402 228,476 228,402"
+    fill="#FFD600"
+  />
+
+  <!-- ── Purple S ─────────────────────────────────────────────────────────── -->
   <text
-    x="222"
-    y="256"
+    x="258" y="244"
     font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif"
     font-weight="900"
-    font-size="128"
-    fill="#7c3aed"
-    filter="url(#tShadow)"
+    font-size="112"
+    fill="#5B21B6"
     text-anchor="middle"
     dominant-baseline="central"
   >S</text>
+
+  <!-- ── Cloud outline (drawn on top so it frames the S and bolt) ─────────── -->
+  <path
+    d="M 118 310
+       Q 118 335 143 335
+       L 375 335
+       Q 402 335 402 310
+       L 402 255
+       C 402 188 388 178 375 188
+       C 362 198 342 218 330 212
+       C 318 206 296 108 256 110
+       C 216 112 200 220 182 215
+       C 164 210 162 190 138 190
+       C 118 190 118 248 118 268
+       L 118 310 Z"
+    fill="none"
+    stroke="#1c1f3a"
+    stroke-width="22"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+  />
 </svg>
