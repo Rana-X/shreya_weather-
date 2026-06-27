@@ -75,7 +75,7 @@ router.get("/news", async (req, res) => {
     const query = encodeURIComponent(`weather ${city} ${region} storm forecast`);
     const rssUrl = `https://news.google.com/rss/search?q=${query}&hl=en-US&gl=US&ceid=US:en`;
     const rssRes = await fetch(rssUrl, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; Strata/1.0)" },
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; WeatherAxis/1.0)" },
     });
     const xml = await rssRes.text();
     const articles = parseRssItems(xml);

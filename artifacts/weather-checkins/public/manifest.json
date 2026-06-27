@@ -1,6 +1,6 @@
 {
-  "name": "Strata — Your Local Weather App",
-  "short_name": "Strata",
+  "name": "WeatherAxis — Your Local Weather App",
+  "short_name": "WeatherAxis",
   "description": "Real forecasts for your neighborhood. See what the weather is actually like near you.",
   "start_url": "/",
   "scope": "/",

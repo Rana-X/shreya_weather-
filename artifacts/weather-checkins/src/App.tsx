@@ -162,7 +162,7 @@ function ClerkProviderWithRoutes() {
         },
         signUp: {
           start: {
-            title: "Join Strata",
+            title: "Join WeatherAxis",
             subtitle: "Create an account to start reporting what you see outside",
           },
         },

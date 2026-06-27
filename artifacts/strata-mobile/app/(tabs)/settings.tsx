@@ -205,7 +205,7 @@ export default function SettingsScreen() {
               </Text>
               <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={styles.aboutRow}>
-                  <Text style={[styles.aboutTitle, { color: colors.foreground }]}>Strata</Text>
+                  <Text style={[styles.aboutTitle, { color: colors.foreground }]}>WeatherAxis</Text>
                   <Text style={[styles.aboutSub, { color: colors.mutedForeground }]}>
                     Your local weather app — where neighbors help each other know what it's really like outside!
                   </Text>

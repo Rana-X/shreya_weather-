@@ -108,7 +108,7 @@ export function Home() {
 
           {/* Left: logo + dark mode toggle */}
           <div className="flex items-center gap-2 shrink-0">
-            <h1 className="text-xl font-display font-extrabold text-foreground tracking-tight">Strata</h1>
+            <h1 className="text-xl font-display font-extrabold text-foreground tracking-tight">WeatherAxis</h1>
             <button
               onClick={toggleDark}
               title={isDark ? "Switch to light mode" : "Switch to dark mode"}

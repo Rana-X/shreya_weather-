@@ -1,6 +1,6 @@
-# [Project name]
+# WeatherAxis
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Your local weather app — see real forecasts and let neighbors flag when the sky tells a different story.
 
 ## Run & Operate
 
