@@ -1,440 +1,412 @@
-import React, { useEffect, useRef } from "react";
+import React, { useMemo } from "react";
 import {
-  Animated,
+  ActivityIndicator,
   Platform,
-  RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { WebView } from "react-native-webview";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, {
-  Circle,
-  Defs,
-  G,
-  Line,
-  LinearGradient,
-  Path,
-  Polygon,
-  Rect,
-  Stop,
-  Text as SvgText,
-} from "react-native-svg";
 import { useColors } from "@/hooks/useColors";
-import { useWeather } from "@/hooks/useWeather";
 import { useLocation } from "@/context/LocationContext";
 
-const RADAR_SIZE = 300;
-const CENTER = RADAR_SIZE / 2;
-const RINGS = 4;
+function buildMapHtml(lat: number, lon: number, isDark: boolean): string {
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:100%; height:100%; background:#0F172A; overflow:hidden; }
+  #map { width:100%; height:100%; }
 
-function precipColor(chance: number): string {
-  if (chance < 20) return "#93C5FD";
-  if (chance < 40) return "#60A5FA";
-  if (chance < 60) return "#3B82F6";
-  if (chance < 80) return "#2563EB";
-  return "#1D4ED8";
-}
+  #modes {
+    position:absolute; top:12px; left:50%; transform:translateX(-50%);
+    z-index:1000; display:flex; gap:5px;
+    background:rgba(10,18,34,0.88); padding:5px;
+    border-radius:14px; border:1px solid rgba(255,255,255,0.08);
+    box-shadow:0 4px 20px rgba(0,0,0,0.5);
+    backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+  }
+  .mode-btn {
+    padding:8px 13px; border-radius:10px; border:none;
+    background:transparent; color:rgba(255,255,255,0.55);
+    font-size:12px; font-weight:600; cursor:pointer;
+    font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+    white-space:nowrap; transition:all 0.15s ease;
+  }
+  .mode-btn.active { background:#25A8E4; color:#fff; box-shadow:0 2px 8px rgba(37,168,228,0.4); }
 
-function RadarSweep({ rotation }: { rotation: Animated.Value }) {
-  return null;
-}
+  #legend {
+    position:absolute; bottom:28px; left:12px; z-index:1000;
+    background:rgba(10,18,34,0.88); padding:10px 12px; border-radius:12px;
+    border:1px solid rgba(255,255,255,0.08);
+    box-shadow:0 4px 16px rgba(0,0,0,0.4);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    display:none; flex-direction:column; gap:6px;
+  }
+  .legend-title { color:rgba(255,255,255,0.45); font-size:9px; font-weight:700;
+    text-transform:uppercase; letter-spacing:1px; font-family:-apple-system,sans-serif; }
+  .legend-items { display:flex; gap:8px; align-items:center; }
+  .legend-swatch { width:24px; height:8px; border-radius:2px; }
+  .legend-label { color:rgba(255,255,255,0.45); font-size:9px; font-family:-apple-system,sans-serif; }
 
-function RadarDial({
-  hourly,
-  sweep,
-  primaryColor,
-}: {
-  hourly: Array<{ hour: number; precipChance: number }>;
-  sweep: Animated.Value;
-  primaryColor: string;
-}) {
-  const slice = hourly.slice(0, 12);
-  const angleStep = 360 / 12;
+  #time-badge {
+    position:absolute; top:12px; right:12px; z-index:1000;
+    background:rgba(10,18,34,0.88); padding:6px 10px; border-radius:10px;
+    border:1px solid rgba(255,255,255,0.08); display:none;
+    color:rgba(255,255,255,0.55); font-size:11px; font-weight:600;
+    font-family:-apple-system,sans-serif;
+  }
 
-  const polygonPoints = slice.map((item, i) => {
-    const angle = ((i * angleStep - 90) * Math.PI) / 180;
-    const r = CENTER * 0.85 * (item.precipChance / 100);
-    return `${CENTER + r * Math.cos(angle)},${CENTER + r * Math.sin(angle)}`;
-  });
+  .leaflet-control-attribution { font-size:8px !important; opacity:0.35 !important; }
+  .leaflet-control-zoom { display:none; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="modes">
+  <button class="mode-btn active" onclick="setMode('satellite')" id="btn-satellite">🛰️ Satellite</button>
+  <button class="mode-btn" onclick="setMode('radar')" id="btn-radar">🌧️ Radar</button>
+  <button class="mode-btn" onclick="setMode('wind')" id="btn-wind">💨 Wind</button>
+  <button class="mode-btn" onclick="setMode('temp')" id="btn-temp">🌡️ Temp</button>
+</div>
+<div id="legend">
+  <div class="legend-title" id="legend-title"></div>
+  <div class="legend-items" id="legend-items"></div>
+</div>
+<div id="time-badge" id="time-badge"></div>
 
-  const fillPath =
-    polygonPoints.length > 0
-      ? `M ${polygonPoints.join(" L ")} Z`
-      : "";
+<script>
+var LAT = ${lat};
+var LON = ${lon};
 
-  const sweepRotation = sweep as unknown as number;
+// ── MAP INIT ──────────────────────────────────────────────
+var map = L.map('map', {
+  zoomControl: false, attributionControl: true,
+  tap: true, touchZoom: true
+}).setView([LAT, LON], 9);
 
-  return (
-    <Svg width={RADAR_SIZE} height={RADAR_SIZE}>
-      <Defs>
-        <LinearGradient id="sweepGrad" x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor={primaryColor} stopOpacity="0" />
-          <Stop offset="1" stopColor={primaryColor} stopOpacity="0.35" />
-        </LinearGradient>
-        <LinearGradient id="precipGrad" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor="#3B82F6" stopOpacity="0.8" />
-          <Stop offset="1" stopColor="#1D4ED8" stopOpacity="0.5" />
-        </LinearGradient>
-      </Defs>
+// Base layers
+var satellite = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  { attribution: 'Tiles &copy; Esri', maxZoom: 19 }
+);
+var dark = L.tileLayer(
+  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  { attribution: '&copy; OpenStreetMap &copy; CartoDB', maxZoom: 19 }
+);
+satellite.addTo(map);
 
-      {/* Background rings */}
-      {Array.from({ length: RINGS }).map((_, i) => (
-        <Circle
-          key={i}
-          cx={CENTER}
-          cy={CENTER}
-          r={((i + 1) / RINGS) * (CENTER * 0.88)}
-          fill="none"
-          stroke={primaryColor}
-          strokeWidth={0.5}
-          strokeOpacity={0.18}
-        />
-      ))}
+// Satellite label overlay (city names on top of satellite imagery)
+var labels = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+  { attribution: '', maxZoom: 19, opacity: 0.8 }
+);
+labels.addTo(map);
 
-      {/* Cross hairs */}
-      <Line x1={CENTER} y1={8} x2={CENTER} y2={RADAR_SIZE - 8} stroke={primaryColor} strokeWidth={0.5} strokeOpacity={0.15} />
-      <Line x1={8} y1={CENTER} x2={RADAR_SIZE - 8} y2={CENTER} stroke={primaryColor} strokeWidth={0.5} strokeOpacity={0.15} />
-
-      {/* Hour labels */}
-      {slice.map((item, i) => {
-        const angle = ((i * angleStep - 90) * Math.PI) / 180;
-        const r = CENTER * 0.94;
-        const x = CENTER + r * Math.cos(angle);
-        const y = CENTER + r * Math.sin(angle);
-        const label = item.hour === 0 ? "12a" : item.hour === 12 ? "12p" : item.hour > 12 ? `${item.hour - 12}p` : `${item.hour}a`;
-        return (
-          <SvgText
-            key={i}
-            x={x}
-            y={y + 4}
-            textAnchor="middle"
-            fontSize={9}
-            fill={primaryColor}
-            fillOpacity={0.5}
-          >
-            {label}
-          </SvgText>
-        );
-      })}
-
-      {/* Precipitation fill polygon */}
-      {fillPath ? (
-        <Path
-          d={fillPath}
-          fill="url(#precipGrad)"
-          strokeWidth={1.5}
-          stroke="#60A5FA"
-          strokeOpacity={0.7}
-        />
-      ) : null}
-
-      {/* Dot points at each hour */}
-      {slice.map((item, i) => {
-        const angle = ((i * angleStep - 90) * Math.PI) / 180;
-        const r = CENTER * 0.85 * (item.precipChance / 100);
-        const x = CENTER + r * Math.cos(angle);
-        const y = CENTER + r * Math.sin(angle);
-        if (item.precipChance < 5) return null;
-        return (
-          <Circle
-            key={i}
-            cx={x}
-            cy={y}
-            r={3.5}
-            fill={precipColor(item.precipChance)}
-            strokeWidth={1}
-            stroke="#fff"
-            strokeOpacity={0.4}
-          />
-        );
-      })}
-
-      {/* Center dot */}
-      <Circle cx={CENTER} cy={CENTER} r={5} fill={primaryColor} fillOpacity={0.9} />
-      <Circle cx={CENTER} cy={CENTER} r={2} fill="#fff" fillOpacity={0.8} />
-    </Svg>
-  );
-}
-
-function PrecipBar({
-  chance,
-  hour,
-  maxChance,
-  primaryColor,
-}: {
-  chance: number;
-  hour: number;
-  maxChance: number;
-  primaryColor: string;
-}) {
-  const label =
-    hour === 0
-      ? "12a"
-      : hour === 12
-      ? "12p"
-      : hour > 12
-      ? `${hour - 12}p`
-      : `${hour}a`;
-
-  const heightPct = maxChance > 0 ? chance / maxChance : 0;
-
-  return (
-    <View style={barStyles.col}>
-      <View style={barStyles.barWrap}>
-        <View
-          style={[
-            barStyles.bar,
-            {
-              height: `${Math.max(heightPct * 100, chance > 0 ? 8 : 2)}%`,
-              backgroundColor: chance > 0 ? precipColor(chance) : "rgba(148,163,184,0.2)",
-            },
-          ]}
-        />
-      </View>
-      <Text style={[barStyles.pct, { color: chance >= 30 ? "#60A5FA" : "#94A3B8" }]}>
-        {chance > 0 ? `${chance}%` : "—"}
-      </Text>
-      <Text style={barStyles.label}>{label}</Text>
-    </View>
-  );
-}
-
-const barStyles = StyleSheet.create({
-  col: { alignItems: "center", flex: 1 },
-  barWrap: { height: 60, width: 10, justifyContent: "flex-end", borderRadius: 5, overflow: "hidden", backgroundColor: "rgba(148,163,184,0.1)" },
-  bar: { width: "100%", borderRadius: 5 },
-  pct: { fontSize: 9, fontWeight: "600", marginTop: 4 },
-  label: { fontSize: 9, color: "#64748B", marginTop: 1 },
+// User location pulse marker
+var pulseIcon = L.divIcon({
+  html: '<div style="position:relative;width:16px;height:16px;">' +
+    '<div style="position:absolute;inset:0;border-radius:50%;background:#25A8E4;border:2.5px solid white;box-shadow:0 0 0 5px rgba(37,168,228,0.25),0 2px 8px rgba(0,0,0,0.4);"></div>' +
+    '</div>',
+  iconSize: [16,16], iconAnchor: [8,8], className: ''
 });
+L.marker([LAT, LON], { icon: pulseIcon }).addTo(map);
+
+// ── RADAR ────────────────────────────────────────────────
+var radarFrames = [];
+var radarLayers = [];
+var radarTimer = null;
+var radarIdx = 0;
+var timeBadge = document.getElementById('time-badge');
+
+async function loadRadarFrames() {
+  try {
+    var res = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+    var data = await res.json();
+    radarFrames = [...(data.radar.past||[]), ...(data.radar.nowcast||[])];
+    // Pre-create tile layers (hidden)
+    radarFrames.forEach(function(f) {
+      var l = L.tileLayer(
+        'https://tilecache.rainviewer.com' + f.path + '/512/{z}/{x}/{y}/8/1_1.png',
+        { opacity:0, zIndex:200, crossOrigin: true }
+      );
+      radarLayers.push(l);
+    });
+  } catch(e) { console.warn('radar fetch failed', e); }
+}
+
+function startRadar() {
+  if (!radarFrames.length) return;
+  radarIdx = 0;
+  radarLayers.forEach(function(l) { l.addTo(map); l.setOpacity(0); });
+  radarLayers[0].setOpacity(0.75);
+  showTimestamp(radarFrames[0].time);
+  timeBadge.style.display = 'block';
+  radarTimer = setInterval(function() {
+    radarLayers[radarIdx].setOpacity(0);
+    radarIdx = (radarIdx + 1) % radarLayers.length;
+    radarLayers[radarIdx].setOpacity(0.75);
+    showTimestamp(radarFrames[radarIdx].time);
+  }, 700);
+}
+
+function stopRadar() {
+  if (radarTimer) { clearInterval(radarTimer); radarTimer = null; }
+  radarLayers.forEach(function(l) { l.setOpacity(0); map.removeLayer(l); });
+  radarLayers = []; radarFrames = [];
+  timeBadge.style.display = 'none';
+}
+
+function showTimestamp(unix) {
+  var d = new Date(unix * 1000);
+  var isNowcast = unix > Date.now()/1000 - 300;
+  var label = isNowcast ? '▶ Forecast' : d.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+  timeBadge.textContent = label;
+}
+
+// ── WIND ────────────────────────────────────────────────
+var windLayer = L.layerGroup();
+
+async function loadWind() {
+  windLayer.clearLayers();
+  var steps = 5, span = 1.8;
+  var lats=[], lons=[];
+  for(var i=0;i<steps;i++) for(var j=0;j<steps;j++) {
+    lats.push((LAT+(i-2)*span/(steps-1)).toFixed(3));
+    lons.push((LON+(j-2)*span/(steps-1)).toFixed(3));
+  }
+  try {
+    var url='https://api.open-meteo.com/v1/forecast?latitude='+lats.join(',')+'&longitude='+lons.join(',')+'&current=windspeed_10m,winddirection_10m&wind_speed_unit=mph&timezone=auto&forecast_days=1';
+    var res=await fetch(url);
+    var json=await res.json();
+    var pts=Array.isArray(json)?json:[json];
+    pts.forEach(function(pt,idx){
+      if(!pt.current) return;
+      var spd=pt.current.windspeed_10m||0;
+      var dir=pt.current.winddirection_10m||0;
+      var la=parseFloat(lats[idx]), lo=parseFloat(lons[idx]);
+      var col=spd<5?'#93C5FD':spd<15?'#60A5FA':spd<25?'#2563EB':spd<40?'#7C3AED':'#DB2777';
+      var sz=Math.round(Math.min(18+spd*0.7, 38));
+      var ic=L.divIcon({
+        html:'<div style="transform:rotate('+dir+'deg);width:'+sz+'px;height:'+sz+'px;display:flex;align-items:center;justify-content:center;">'+
+          '<svg viewBox="0 0 20 20" width="'+sz+'" height="'+sz+'">'+
+          '<polygon points="10,1 14,16 10,13 6,16" fill="'+col+'" opacity="0.92" stroke="rgba(0,0,0,0.2)" stroke-width="0.5"/>'+
+          '</svg></div>'+
+          '<div style="text-align:center;color:'+col+';font-size:9px;font-weight:700;font-family:-apple-system,sans-serif;text-shadow:0 1px 3px rgba(0,0,0,0.8);">'+Math.round(spd)+'</div>',
+        iconSize:[sz+4,sz+14], iconAnchor:[(sz+4)/2, sz/2], className:''
+      });
+      L.marker([la,lo],{icon:ic}).addTo(windLayer);
+    });
+  } catch(e){ console.warn('wind error',e); }
+}
+
+// ── TEMPERATURE ───────────────────────────────────────────
+var tempLayerGroup = L.layerGroup();
+
+var TEMP_COLORS=[
+  [-20,'#1e1b4b'],[-5,'#312e81'],[10,'#1d4ed8'],[25,'#0ea5e9'],
+  [32,'#06b6d4'],[45,'#10b981'],[55,'#84cc16'],[65,'#facc15'],
+  [75,'#f97316'],[85,'#ef4444'],[95,'#b91c1c'],[110,'#7f1d1d']
+];
+
+function tempColor(f){
+  for(var i=1;i<TEMP_COLORS.length;i++){
+    if(f<=TEMP_COLORS[i][0]){
+      return TEMP_COLORS[i-1][1];
+    }
+  }
+  return TEMP_COLORS[TEMP_COLORS.length-1][1];
+}
+
+async function loadTemp(){
+  tempLayerGroup.clearLayers();
+  var steps=5, span=1.8;
+  var lats=[],lons=[];
+  for(var i=0;i<steps;i++) for(var j=0;j<steps;j++){
+    lats.push((LAT+(i-2)*span/(steps-1)).toFixed(3));
+    lons.push((LON+(j-2)*span/(steps-1)).toFixed(3));
+  }
+  try{
+    var url='https://api.open-meteo.com/v1/forecast?latitude='+lats.join(',')+'&longitude='+lons.join(',')+'&current=temperature_2m&temperature_unit=fahrenheit&timezone=auto&forecast_days=1';
+    var res=await fetch(url);
+    var json=await res.json();
+    var pts=Array.isArray(json)?json:[json];
+    pts.forEach(function(pt,idx){
+      if(!pt.current) return;
+      var t=pt.current.temperature_2m;
+      var la=parseFloat(lats[idx]),lo=parseFloat(lons[idx]);
+      var col=tempColor(t);
+      var ic=L.divIcon({
+        html:'<div style="background:'+col+';border-radius:50%;width:46px;height:46px;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,0.45);box-shadow:0 2px 10px rgba(0,0,0,0.5);">'+
+          '<span style="color:#fff;font-size:13px;font-weight:800;font-family:-apple-system,sans-serif;text-shadow:0 1px 3px rgba(0,0,0,0.4);">'+Math.round(t)+'°</span></div>',
+        iconSize:[46,46], iconAnchor:[23,23], className:''
+      });
+      L.marker([la,lo],{icon:ic}).addTo(tempLayerGroup);
+    });
+  }catch(e){ console.warn('temp error',e); }
+}
+
+// ── LEGEND ────────────────────────────────────────────────
+var LEGENDS={
+  radar:{title:'Precipitation intensity',items:[
+    {c:'#4DFF00',l:'Light'},{c:'#FFFF00',l:'Moderate'},{c:'#FF8C00',l:'Heavy'},{c:'#FF0000',l:'Severe'}
+  ]},
+  wind:{title:'Wind speed (mph)',items:[
+    {c:'#93C5FD',l:'< 5'},{c:'#2563EB',l:'15'},{c:'#7C3AED',l:'25'},{c:'#DB2777',l:'40+'}
+  ]},
+  temp:{title:'Temperature (°F)',items:[
+    {c:'#0ea5e9',l:'Cold'},{c:'#10b981',l:'Cool'},{c:'#facc15',l:'Warm'},{c:'#ef4444',l:'Hot'}
+  ]}
+};
+
+function updateLegend(mode){
+  var el=document.getElementById('legend');
+  var cfg=LEGENDS[mode];
+  if(!cfg){ el.style.display='none'; return; }
+  el.style.display='flex';
+  document.getElementById('legend-title').textContent=cfg.title;
+  document.getElementById('legend-items').innerHTML=cfg.items.map(function(x){
+    return '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">'+
+      '<div class="legend-swatch" style="background:'+x.c+'"></div>'+
+      '<div class="legend-label">'+x.l+'</div></div>';
+  }).join('');
+}
+
+// ── MODE SWITCH ───────────────────────────────────────────
+var currentMode='satellite';
+
+async function setMode(mode){
+  document.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('btn-'+mode).classList.add('active');
+
+  // Tear down previous
+  stopRadar();
+  windLayer.remove();
+  tempLayerGroup.remove();
+
+  // Base layer
+  if(mode==='satellite'){
+    map.removeLayer(dark);
+    satellite.addTo(map);
+    labels.addTo(map);
+  } else {
+    map.removeLayer(satellite);
+    map.removeLayer(labels);
+    dark.addTo(map);
+  }
+
+  currentMode=mode;
+  updateLegend(mode);
+
+  if(mode==='radar'){ await loadRadarFrames(); startRadar(); }
+  else if(mode==='wind'){ await loadWind(); windLayer.addTo(map); }
+  else if(mode==='temp'){ await loadTemp(); tempLayerGroup.addTo(map); }
+}
+
+// Boot
+setMode('satellite');
+<\/script>
+</body>
+</html>`;
+}
 
 export default function RadarScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { cityName } = useLocation();
-  const { data: weather, isLoading, refetch, isRefetching } = useWeather();
+  const { lat, lon, cityName } = useLocation();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const sweep = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.loop(
-      Animated.timing(sweep, {
-        toValue: 360,
-        duration: 3000,
-        useNativeDriver: true,
-      })
-    ).start();
-  }, []);
+  const html = useMemo(() => {
+    if (lat == null || lon == null) return null;
+    return buildMapHtml(lat, lon, true);
+  }, [lat, lon]);
 
-  const hourly = weather?.hourly.slice(0, 12) ?? [];
-  const maxChance = Math.max(...hourly.map((h) => h.precipChance), 1);
-  const avgPrecip = hourly.length
-    ? Math.round(hourly.reduce((s, h) => s + h.precipChance, 0) / hourly.length)
-    : 0;
-  const peakHour = hourly.reduce(
-    (best, h) => (h.precipChance > best.precipChance ? h : best),
-    hourly[0] ?? { hour: 0, precipChance: 0 }
-  );
-
-  const rainRisk =
-    avgPrecip < 20 ? "Low" : avgPrecip < 50 ? "Moderate" : "High";
-  const rainRiskColor =
-    avgPrecip < 20 ? "#22C55E" : avgPrecip < 50 ? "#F59E0B" : "#EF4444";
+  if (lat == null || lon == null || !html) {
+    return (
+      <View style={[styles.loading, { backgroundColor: colors.background }]}>
+        <ActivityIndicator color={colors.primary} size="large" />
+        <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>
+          Getting your location…
+        </Text>
+      </View>
+    );
+  }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: "#0F172A" }]}>
+      {/* Header sits above the map */}
       <View
         style={[
           styles.header,
-          {
-            paddingTop: topPad + 8,
-            backgroundColor: colors.background,
-            borderBottomColor: colors.border,
-          },
+          { paddingTop: topPad + 8 },
         ]}
       >
         <View>
-          <Text style={[styles.title, { color: colors.foreground }]}>Radar</Text>
-          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-            {cityName} · Next 12 hours
-          </Text>
-        </View>
-        <View
-          style={[
-            styles.badge,
-            { backgroundColor: rainRiskColor + "22", borderColor: rainRiskColor + "55" },
-          ]}
-        >
-          <View style={[styles.dot, { backgroundColor: rainRiskColor }]} />
-          <Text style={[styles.badgeText, { color: rainRiskColor }]}>{rainRisk} rain risk</Text>
+          <Text style={styles.title}>Radar</Text>
+          <Text style={styles.subtitle}>{cityName}</Text>
         </View>
       </View>
 
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: bottomPad + 100 }}
-        refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
-        }
+      <WebView
+        style={styles.map}
+        source={{ html }}
+        originWhitelist={["*"]}
+        javaScriptEnabled
+        domStorageEnabled
+        allowsInlineMediaPlayback
+        mediaPlaybackRequiresUserAction={false}
+        scrollEnabled={false}
+        bounces={false}
+        overScrollMode="never"
         showsVerticalScrollIndicator={false}
-      >
-        {/* Radar dial */}
-        <View style={styles.radarWrap}>
-          <View style={[styles.radarCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {isLoading ? (
-              <View style={{ width: RADAR_SIZE, height: RADAR_SIZE, alignItems: "center", justifyContent: "center" }}>
-                <Text style={{ color: colors.mutedForeground }}>Loading…</Text>
-              </View>
-            ) : (
-              <RadarDial hourly={hourly} sweep={sweep} primaryColor={colors.primary} />
-            )}
-            <Text style={[styles.radarLabel, { color: colors.mutedForeground }]}>
-              Precipitation probability
-            </Text>
-          </View>
-        </View>
-
-        {/* Summary cards */}
-        <View style={styles.summaryRow}>
-          {[
-            {
-              label: "Avg chance",
-              value: `${avgPrecip}%`,
-              icon: "💧",
-            },
-            {
-              label: "Peak at",
-              value: peakHour
-                ? peakHour.hour === 0
-                  ? "12am"
-                  : peakHour.hour === 12
-                  ? "12pm"
-                  : peakHour.hour > 12
-                  ? `${peakHour.hour - 12}pm`
-                  : `${peakHour.hour}am`
-                : "—",
-              icon: "🌧️",
-            },
-            {
-              label: "Current",
-              value: `${weather?.current.precipitation ?? 0} mm`,
-              icon: "🌂",
-            },
-          ].map(({ label, value, icon }) => (
-            <View
-              key={label}
-              style={[styles.summaryCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-            >
-              <Text style={styles.summaryIcon}>{icon}</Text>
-              <Text style={[styles.summaryValue, { color: colors.foreground }]}>{value}</Text>
-              <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>{label}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Bar chart */}
-        <View style={[styles.barCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
-            Hourly precipitation chance
-          </Text>
-          <View style={styles.bars}>
-            {hourly.map((h, i) => (
-              <PrecipBar
-                key={i}
-                chance={h.precipChance}
-                hour={h.hour}
-                maxChance={maxChance}
-                primaryColor={colors.primary}
-              />
-            ))}
-          </View>
-        </View>
-
-        {/* Legend */}
-        <View style={styles.legendRow}>
-          {[
-            { label: "< 20%", color: "#93C5FD" },
-            { label: "20–40%", color: "#60A5FA" },
-            { label: "40–60%", color: "#3B82F6" },
-            { label: "60–80%", color: "#2563EB" },
-            { label: "> 80%", color: "#1D4ED8" },
-          ].map(({ label, color }) => (
-            <View key={label} style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: color }]} />
-              <Text style={[styles.legendLabel, { color: colors.mutedForeground }]}>{label}</Text>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
+        showsHorizontalScrollIndicator={false}
+        onError={(e) => console.warn("WebView error", e.nativeEvent)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingBottom: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  title: { fontSize: 32, fontWeight: "700" },
-  subtitle: { fontSize: 14, marginTop: 2 },
-  badge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  dot: { width: 7, height: 7, borderRadius: 4 },
-  badgeText: { fontSize: 12, fontWeight: "600" },
-  radarWrap: { alignItems: "center", paddingTop: 20, paddingHorizontal: 20 },
-  radarCard: {
-    borderRadius: 20,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: 16,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  radarLabel: { fontSize: 11, marginTop: 10, letterSpacing: 0.5 },
-  summaryRow: {
-    flexDirection: "row",
-    gap: 10,
-    paddingHorizontal: 20,
-    marginTop: 14,
-  },
-  summaryCard: {
+  container: {
     flex: 1,
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: 14,
+    backgroundColor: "#0F172A",
+  },
+  loading: {
+    flex: 1,
     alignItems: "center",
-    gap: 4,
+    justifyContent: "center",
+    gap: 16,
   },
-  summaryIcon: { fontSize: 22 },
-  summaryValue: { fontSize: 17, fontWeight: "700" },
-  summaryLabel: { fontSize: 11 },
-  barCard: {
-    margin: 20,
-    marginTop: 14,
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: 16,
+  loadingText: {
+    fontSize: 15,
   },
-  sectionLabel: { fontSize: 11, fontWeight: "600", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 14 },
-  bars: { flexDirection: "row", gap: 2, alignItems: "flex-end" },
-  legendRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, paddingHorizontal: 20, paddingBottom: 8, justifyContent: "center" },
-  legendItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-  legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendLabel: { fontSize: 11 },
+  header: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    paddingHorizontal: 20,
+    paddingBottom: 0,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.55)",
+    marginTop: 2,
+  },
+  map: {
+    flex: 1,
+    backgroundColor: "#0F172A",
+  },
 });
