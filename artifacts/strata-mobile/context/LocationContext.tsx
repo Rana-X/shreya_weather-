@@ -5,6 +5,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { Platform } from "react-native";
@@ -47,6 +48,7 @@ const LocationContext = createContext<LocationState>({
 });
 
 const SAVED_KEY = "strata-saved-locations";
+const MANUAL_LOCATION_KEY = "strata-manual-location";
 
 async function reverseGeocode(lat: number, lon: number): Promise<string> {
   try {
@@ -77,12 +79,28 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
   const [gpsLat, setGpsLat] = useState<number | null>(null);
   const [gpsLon, setGpsLon] = useState<number | null>(null);
   const [gpsCityName, setGpsCityName] = useState("Your Location");
+  const [isManual, setIsManual] = useState(false);
+  const isManualRef = useRef(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(SAVED_KEY).then((raw) => {
-      if (raw) {
+    Promise.all([
+      AsyncStorage.getItem(SAVED_KEY),
+      AsyncStorage.getItem(MANUAL_LOCATION_KEY),
+    ]).then(([savedRaw, manualRaw]) => {
+      if (savedRaw) {
         try {
-          setSavedLocations(JSON.parse(raw));
+          setSavedLocations(JSON.parse(savedRaw));
+        } catch {}
+      }
+      if (manualRaw) {
+        try {
+          const city: CityResult = JSON.parse(manualRaw);
+          setLat(city.lat);
+          setLon(city.lon);
+          setCityName(`${city.name}${city.admin1 ? ", " + city.admin1 : ""}`);
+          setIsManual(true);
+          isManualRef.current = true;
+          setIsLoading(false);
         } catch {}
       }
     });
@@ -120,24 +138,26 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
             const { latitude, longitude } = pos.coords;
             setGpsLat(latitude);
             setGpsLon(longitude);
-            setLat(latitude);
-            setLon(longitude);
             setHasPermission(true);
             const name = await reverseGeocode(latitude, longitude);
             setGpsCityName(name);
-            setCityName(name);
-            setIsLoading(false);
+            if (!isManualRef.current) {
+              setLat(latitude);
+              setLon(longitude);
+              setCityName(name);
+              setIsLoading(false);
+            }
           },
           () => {
             clearTimeout(timeout);
-            applyFallback();
+            if (!isManualRef.current) applyFallback();
           }
         );
       } else {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== "granted") {
           setHasPermission(false);
-          setIsLoading(false);
+          if (!isManualRef.current) setIsLoading(false);
           return;
         }
         setHasPermission(true);
@@ -147,12 +167,14 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
         const { latitude, longitude } = loc.coords;
         setGpsLat(latitude);
         setGpsLon(longitude);
-        setLat(latitude);
-        setLon(longitude);
         const name = await reverseGeocode(latitude, longitude);
         setGpsCityName(name);
-        setCityName(name);
-        setIsLoading(false);
+        if (!isManualRef.current) {
+          setLat(latitude);
+          setLon(longitude);
+          setCityName(name);
+          setIsLoading(false);
+        }
       }
     } catch {
       setIsLoading(false);
@@ -190,9 +212,15 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     setLat(city.lat);
     setLon(city.lon);
     setCityName(`${city.name}${city.admin1 ? ", " + city.admin1 : ""}`);
+    setIsManual(true);
+    isManualRef.current = true;
+    AsyncStorage.setItem(MANUAL_LOCATION_KEY, JSON.stringify(city));
   }, []);
 
   const resetToGPS = useCallback(() => {
+    setIsManual(false);
+    isManualRef.current = false;
+    AsyncStorage.removeItem(MANUAL_LOCATION_KEY);
     if (gpsLat && gpsLon) {
       setLat(gpsLat);
       setLon(gpsLon);
