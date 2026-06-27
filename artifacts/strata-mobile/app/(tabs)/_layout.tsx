@@ -20,6 +20,14 @@ function NativeTabLayout() {
         <Icon sf={{ default: "cloud.sun", selected: "cloud.sun.fill" }} />
         <Label>Forecast</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="radar">
+        <Icon sf={{ default: "antenna.radiowaves.left.and.right", selected: "antenna.radiowaves.left.and.right" }} />
+        <Label>Radar</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="news">
+        <Icon sf={{ default: "newspaper", selected: "newspaper.fill" }} />
+        <Label>News</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="community">
         <Icon sf={{ default: "person.3", selected: "person.3.fill" }} />
         <Label>Community</Label>
@@ -91,6 +99,30 @@ function ClassicTabLayout() {
               <SymbolView name="cloud.sun" tintColor={color} size={24} />
             ) : (
               <Feather name="cloud" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="radar"
+        options={{
+          title: "Radar",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="antenna.radiowaves.left.and.right" tintColor={color} size={24} />
+            ) : (
+              <Feather name="radio" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="news"
+        options={{
+          title: "News",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="newspaper" tintColor={color} size={24} />
+            ) : (
+              <Feather name="file-text" size={22} color={color} />
             ),
         }}
       />
