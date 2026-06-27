@@ -17,6 +17,7 @@ import {
   type WeatherAlert,
 } from "@/hooks/useAlerts";
 import { useColors } from "@/hooks/useColors";
+import { HomeBackButton } from "@/components/HomeBackButton";
 import { useLocation } from "@/context/LocationContext";
 
 function timeLabel(iso: string): string {
@@ -173,6 +174,7 @@ export default function AlertsScreen() {
         ]}
       >
         <View>
+          <HomeBackButton tint={colors.primary} />
           <Text style={[styles.title, { color: colors.foreground }]}>
             Alerts
           </Text>

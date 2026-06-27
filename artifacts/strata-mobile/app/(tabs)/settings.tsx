@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { HomeBackButton } from "@/components/HomeBackButton";
 import { type CityResult, useLocation } from "@/context/LocationContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useUnit } from "@/context/UnitContext";
@@ -123,6 +124,7 @@ export default function SettingsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { paddingTop: topPad + 8, backgroundColor: colors.background }]}>
+        <HomeBackButton tint={colors.primary} />
         <Text style={[styles.title, { color: colors.foreground }]}>Settings</Text>
       </View>
 

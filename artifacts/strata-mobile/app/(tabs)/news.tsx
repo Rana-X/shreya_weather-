@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { HomeBackButton } from "@/components/HomeBackButton";
 import { useNews, type NewsArticle } from "@/hooks/useNews";
 
 function timeAgo(pubDate: string): string {
@@ -110,6 +111,7 @@ export default function NewsScreen() {
         ]}
       >
         <View>
+          <HomeBackButton tint={colors.primary} />
           <Text style={[styles.title, { color: colors.foreground }]}>Weather News</Text>
           {data?.city ? (
             <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>

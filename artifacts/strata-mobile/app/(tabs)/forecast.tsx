@@ -15,6 +15,7 @@ import { HourlyStrip } from "@/components/HourlyStrip";
 import { WeeklyForecast } from "@/components/WeeklyForecast";
 import { TempChart } from "@/components/TempChart";
 import { useColors } from "@/hooks/useColors";
+import { HomeBackButton } from "@/components/HomeBackButton";
 import { useWeather } from "@/hooks/useWeather";
 import { useLocation } from "@/context/LocationContext";
 
@@ -29,25 +30,35 @@ export default function ForecastScreen() {
 
   if (isLoading && !weather) {
     return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={{ paddingTop: topPad + 8, paddingHorizontal: 20 }}>
+          <HomeBackButton tint={colors.primary} />
+        </View>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
       </View>
     );
   }
 
   if (isError && !weather) {
     return (
-      <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <Ionicons name="cloud-offline-outline" size={52} color={colors.mutedForeground} />
-        <Text style={[styles.errorText, { color: colors.mutedForeground }]}>
-          Couldn't load forecast
-        </Text>
-        <TouchableOpacity
-          style={[styles.retryBtn, { backgroundColor: colors.primary }]}
-          onPress={() => refetch()}
-        >
-          <Text style={styles.retryBtnText}>Try Again</Text>
-        </TouchableOpacity>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={{ paddingTop: topPad + 8, paddingHorizontal: 20 }}>
+          <HomeBackButton tint={colors.primary} />
+        </View>
+        <View style={styles.centered}>
+          <Ionicons name="cloud-offline-outline" size={52} color={colors.mutedForeground} />
+          <Text style={[styles.errorText, { color: colors.mutedForeground }]}>
+            Couldn't load forecast
+          </Text>
+          <TouchableOpacity
+            style={[styles.retryBtn, { backgroundColor: colors.primary }]}
+            onPress={() => refetch()}
+          >
+            <Text style={styles.retryBtnText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -68,6 +79,7 @@ export default function ForecastScreen() {
         />
       }
     >
+      <HomeBackButton tint={colors.primary} />
       <Text style={[styles.screenTitle, { color: colors.foreground }]}>Forecast</Text>
       <Text style={[styles.location, { color: colors.mutedForeground }]}>{cityName}</Text>
 

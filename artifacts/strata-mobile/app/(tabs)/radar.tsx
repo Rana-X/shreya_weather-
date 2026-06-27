@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { HomeBackButton } from "@/components/HomeBackButton";
 import { useLocation } from "@/context/LocationContext";
 import { RadarMap, type RadarMapHandle } from "@/components/RadarMap";
 
@@ -366,9 +367,9 @@ export default function RadarScreen() {
   const { lat, lon, cityName } = useLocation();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
-  // Position mode buttons below the "Radar" title header
-  // topPad + 8 (content start) + ~38 (title) + ~19 (subtitle) + 12 (gap)
-  const modesTop = topPad + 77;
+  // Position mode buttons below the "Radar" title header + the Home button.
+  // topPad + 8 (start) + ~40 (Home button) + ~38 (title) + ~19 (subtitle) + 12 (gap)
+  const modesTop = topPad + 117;
 
   const mapRef = useRef<RadarMapHandle>(null);
 
@@ -393,11 +394,16 @@ export default function RadarScreen() {
 
   if (!html) {
     return (
-      <View style={[styles.loading, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.primary} size="large" />
-        <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>
-          Getting your location…
-        </Text>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={{ paddingTop: topPad + 8, paddingHorizontal: 20 }}>
+          <HomeBackButton tint={colors.primary} />
+        </View>
+        <View style={styles.loading}>
+          <ActivityIndicator color={colors.primary} size="large" />
+          <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>
+            Getting your location…
+          </Text>
+        </View>
       </View>
     );
   }
@@ -412,6 +418,7 @@ export default function RadarScreen() {
         ]}
       >
         <View>
+          <HomeBackButton tint="#FFFFFF" />
           <Text style={styles.title}>Radar</Text>
           <Text style={styles.subtitle}>{cityName}</Text>
         </View>
