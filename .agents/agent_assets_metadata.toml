@@ -23,3 +23,9 @@ id = "uWCBCY2bYDHpB-wsDMAmw"
 uri = "file://strata-mobile.tar.gz"
 type = "unspecified"
 title = "Strata Mobile App — source code"
+
+[[outputs]]
+id = "-ny80Q2d6Dz_ntKMMH-qP"
+uri = "file://weather-home-variants.zip"
+type = "unspecified"
+title = "Weather Home Variants (Ambient, Decision, Letter)"
