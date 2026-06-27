@@ -1,6 +1,9 @@
-import React, { createContext, useContext, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 type TempUnit = "C" | "F";
+
+const STORAGE_KEY = "@weatheraxis_unit";
 
 interface UnitContextValue {
   unit: TempUnit;
@@ -17,11 +20,23 @@ const UnitContext = createContext<UnitContextValue>({
 export function UnitProvider({ children }: { children: React.ReactNode }) {
   const [unit, setUnit] = useState<TempUnit>("C");
 
-  const toggleUnit = () => setUnit((prev) => (prev === "C" ? "F" : "C"));
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then((val) => {
+        if (val === "F" || val === "C") setUnit(val);
+      })
+      .catch(() => {});
+  }, []);
+
+  const toggleUnit = () => {
+    const next: TempUnit = unit === "C" ? "F" : "C";
+    setUnit(next);
+    AsyncStorage.setItem(STORAGE_KEY, next).catch(() => {});
+  };
 
   const formatTemp = (celsius: number): string => {
     if (unit === "F") {
-      return `${Math.round(celsius * 9 / 5 + 32)}°`;
+      return `${Math.round((celsius * 9) / 5 + 32)}°`;
     }
     return `${Math.round(celsius)}°`;
   };

@@ -38,7 +38,7 @@ function NativeTabLayout() {
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="community">
         <Icon sf={{ default: "person.3", selected: "person.3.fill" }} />
-        <Label>Community</Label>
+        <Label>Nearby</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="settings">
         <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
@@ -161,7 +161,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="community"
         options={{
-          title: "Community",
+          title: "Nearby",
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="person.3" tintColor={color} size={24} />

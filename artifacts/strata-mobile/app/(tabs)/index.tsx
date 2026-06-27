@@ -30,6 +30,17 @@ import { AlertBanner } from "@/components/AlertBanner";
 import { useAlerts } from "@/hooks/useAlerts";
 import { useUnit } from "@/context/UnitContext";
 
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+function getDateString(): string {
+  const d = new Date();
+  return `${DAY_NAMES[d.getDay()]}, ${MONTH_NAMES[d.getMonth()]} ${d.getDate()}`;
+}
+
 function uvLabel(uv: number): string {
   if (uv <= 2) return "Low";
   if (uv <= 5) return "Moderate";
@@ -44,17 +55,29 @@ function getOutfitSuggestion(current: CurrentWeather): string {
   const isSnowy = weatherType === "snowy";
   const isWindy = windSpeed > 20;
 
-  if (temp >= 35) return "Shorts and a light t-shirt — stay hydrated! ☀️";
-  if (temp >= 28 && isRainy) return "Light clothes and an umbrella — warm but wet 🌂";
-  if (temp >= 28) return "Light clothes — shorts or a summer outfit 🌤️";
-  if (temp >= 20 && isRainy) return "Light jacket and umbrella needed ☔";
-  if (temp >= 20) return "T-shirt and jeans should work great 👕";
-  if (temp >= 10 && isRainy) return "Hoodie and umbrella — good idea ☔";
-  if (temp >= 10 && isWindy) return "Windbreaker — it's breezy out there 💨";
-  if (temp >= 10) return "Hoodie or light jacket time 🍂";
-  if (temp >= 0 && isSnowy) return "Warm coat, boots, and a scarf! ❄️";
-  if (temp >= 0) return "Warm coat and layers — it's cold! 🧥";
-  return "Heavy coat, hat, and gloves — bundle up! 🥶";
+  if (temp >= 35) return "Shorts and a light t-shirt — stay hydrated!";
+  if (temp >= 28 && isRainy) return "Light clothes and an umbrella — warm but wet.";
+  if (temp >= 28) return "Light clothes — shorts or a summer outfit.";
+  if (temp >= 20 && isRainy) return "Light jacket and umbrella needed.";
+  if (temp >= 20) return "T-shirt and jeans should work great.";
+  if (temp >= 10 && isRainy) return "Hoodie and umbrella — good idea.";
+  if (temp >= 10 && isWindy) return "Windbreaker — it's breezy out there.";
+  if (temp >= 10) return "Hoodie or light jacket time.";
+  if (temp >= 0 && isSnowy) return "Warm coat, boots, and a scarf!";
+  if (temp >= 0) return "Warm coat and layers — it's cold!";
+  return "Heavy coat, hat, and gloves — bundle up!";
+}
+
+function getOutfitEmoji(current: CurrentWeather): string {
+  const { temp, weatherType } = current;
+  const isRainy = weatherType === "rainy" || weatherType === "stormy";
+  const isSnowy = weatherType === "snowy";
+  if (temp >= 35) return "🌞";
+  if (isRainy) return "☔";
+  if (isSnowy) return "❄️";
+  if (temp >= 20) return "👕";
+  if (temp >= 10) return "🧥";
+  return "🥶";
 }
 
 function StatPill({
@@ -89,7 +112,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { cityName, isLoading: locationLoading } = useLocation();
-  const { data: weather, isLoading, refetch, isRefetching } = useWeather();
+  const { data: weather, isLoading, isError, refetch, isRefetching } = useWeather();
   const { data: corrections } = useCorrections();
   const { data: alertsData } = useAlerts();
   const { data: aqiData } = useAQI();
@@ -101,13 +124,13 @@ export default function HomeScreen() {
   const isDarkText = WEATHER_DARK_TEXT.includes(weatherType);
   const textColor = isDarkText ? "#122436" : "#FFFFFF";
 
-  const disagreements = corrections?.filter(
-    (c) => c.actualWeatherType !== c.officialWeatherType
-  ).length ?? 0;
+  const disagreements =
+    corrections?.filter((c) => c.actualWeatherType !== c.officialWeatherType).length ?? 0;
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const today = weather?.daily[0];
   const panelBg = `${textColor === "#FFFFFF" ? "#000000" : "#FFFFFF"}18`;
+  const dateStr = getDateString();
 
   if (locationLoading || (isLoading && !weather)) {
     return (
@@ -121,14 +144,26 @@ export default function HomeScreen() {
     );
   }
 
+  if (isError && !weather) {
+    return (
+      <LinearGradient
+        colors={["#4A90C4", "#87D8F5"]}
+        style={[styles.loading, { paddingTop: topPad }]}
+      >
+        <Ionicons name="cloud-offline-outline" size={52} color="#FFFFFF" style={{ opacity: 0.8 }} />
+        <Text style={styles.loadingText}>Couldn't load weather</Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
+          <Text style={styles.retryBtnText}>Try Again</Text>
+        </TouchableOpacity>
+      </LinearGradient>
+    );
+  }
+
   return (
     <LinearGradient colors={gradient} style={styles.container}>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: topPad + 8 },
-        ]}
+        contentContainerStyle={[styles.content, { paddingTop: topPad + 8 }]}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="never"
         refreshControl={
@@ -139,19 +174,28 @@ export default function HomeScreen() {
           />
         }
       >
+        {/* Header */}
         <View style={styles.header}>
-          <View style={styles.locationRow}>
-            <Ionicons name="location" size={16} color={textColor} style={{ opacity: 0.8 }} />
-            <Text
-              style={[styles.cityName, { color: textColor }]}
-              numberOfLines={1}
-            >
-              {cityName}
+          <View style={styles.headerLeft}>
+            <View style={styles.locationRow}>
+              <Ionicons
+                name="location"
+                size={15}
+                color={textColor}
+                style={{ opacity: 0.8 }}
+              />
+              <Text style={[styles.cityName, { color: textColor }]} numberOfLines={1}>
+                {cityName}
+              </Text>
+            </View>
+            <Text style={[styles.dateStr, { color: textColor, opacity: 0.65 }]}>
+              {dateStr}
             </Text>
           </View>
           <TouchableOpacity
             onPress={() => router.push("/(tabs)/settings")}
             hitSlop={10}
+            style={styles.searchBtn}
           >
             <Ionicons name="search" size={22} color={textColor} style={{ opacity: 0.8 }} />
           </TouchableOpacity>
@@ -159,8 +203,9 @@ export default function HomeScreen() {
 
         <AlertBanner alerts={activeAlerts} textColor={textColor} />
 
+        {/* Hero */}
         <View style={styles.hero}>
-          <WeatherIcon type={weatherType} size={80} color={textColor} />
+          <WeatherIcon type={weatherType} size={88} color={textColor} />
           <Text style={[styles.temp, { color: textColor }]}>
             {weather ? formatTemp(weather.current.temp) : "--°"}
           </Text>
@@ -170,6 +215,11 @@ export default function HomeScreen() {
           <Text style={[styles.feelsLike, { color: textColor, opacity: 0.7 }]}>
             Feels like {weather ? formatTemp(weather.current.feelsLike) : "--°"}
           </Text>
+          {today && (
+            <Text style={[styles.highLow, { color: textColor, opacity: 0.65 }]}>
+              ↑ {formatTemp(today.high)}{"   "}↓ {formatTemp(today.low)}
+            </Text>
+          )}
         </View>
 
         {/* Stats card — two rows */}
@@ -227,7 +277,12 @@ export default function HomeScreen() {
         {aqiData && (
           <View style={[styles.infoCard, { backgroundColor: panelBg }]}>
             <View style={styles.aqiRow}>
-              <View style={[styles.aqiBadge, { backgroundColor: aqiData.color + "33", borderColor: aqiData.color }]}>
+              <View
+                style={[
+                  styles.aqiBadge,
+                  { backgroundColor: aqiData.color + "33", borderColor: aqiData.color },
+                ]}
+              >
                 <View style={[styles.aqiDot, { backgroundColor: aqiData.color }]} />
                 <Text style={[styles.aqiBadgeText, { color: textColor }]}>
                   {aqiData.label}
@@ -243,9 +298,10 @@ export default function HomeScreen() {
         {/* What to Wear card */}
         {weather && (
           <View style={[styles.infoCard, { backgroundColor: panelBg }]}>
-            <Text style={[styles.cardLabel, { color: textColor }]}>
-              👕 WHAT TO WEAR
-            </Text>
+            <View style={styles.wearLabelRow}>
+              <Text style={styles.wearEmoji}>{getOutfitEmoji(weather.current)}</Text>
+              <Text style={[styles.cardLabel, { color: textColor }]}>WHAT TO WEAR</Text>
+            </View>
             <Text style={[styles.wearText, { color: textColor }]}>
               {getOutfitSuggestion(weather.current)}
             </Text>
@@ -273,7 +329,12 @@ export default function HomeScreen() {
             <Text style={[styles.neighborText, { color: textColor }]}>
               {disagreements} neighbor{disagreements !== 1 ? "s" : ""} see something different
             </Text>
-            <Ionicons name="chevron-forward" size={16} color={textColor} style={{ opacity: 0.6 }} />
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={textColor}
+              style={{ opacity: 0.6 }}
+            />
           </TouchableOpacity>
         )}
 
@@ -296,6 +357,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
   },
+  retryBtn: {
+    marginTop: 4,
+    backgroundColor: "rgba(255,255,255,0.25)",
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.5)",
+  },
+  retryBtnText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "600",
+  },
   scroll: { flex: 1 },
   content: {
     paddingBottom: 120,
@@ -303,32 +378,44 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
     paddingHorizontal: 20,
+  },
+  headerLeft: {
+    flex: 1,
+    marginRight: 16,
+    gap: 3,
   },
   locationRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    flex: 1,
-    marginRight: 16,
+    gap: 5,
   },
   cityName: {
     fontSize: 18,
     fontWeight: "600",
     flex: 1,
   },
+  dateStr: {
+    fontSize: 13,
+    fontWeight: "400",
+    marginLeft: 20,
+  },
+  searchBtn: {
+    paddingTop: 2,
+  },
   hero: {
     alignItems: "center",
-    gap: 8,
-    paddingVertical: 8,
+    gap: 6,
+    paddingVertical: 4,
   },
   temp: {
     fontSize: 90,
     fontWeight: "200",
     lineHeight: 96,
     letterSpacing: -4,
+    marginTop: 4,
   },
   condition: {
     fontSize: 22,
@@ -337,6 +424,12 @@ const styles = StyleSheet.create({
   feelsLike: {
     fontSize: 15,
     fontWeight: "400",
+  },
+  highLow: {
+    fontSize: 14,
+    fontWeight: "400",
+    marginTop: 2,
+    letterSpacing: 0.5,
   },
   statsCard: {
     marginHorizontal: 16,
@@ -405,12 +498,21 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     opacity: 0.8,
   },
+  wearLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 6,
+  },
+  wearEmoji: {
+    fontSize: 16,
+    lineHeight: 20,
+  },
   cardLabel: {
     fontSize: 11,
     fontWeight: "700",
     letterSpacing: 1.2,
     opacity: 0.7,
-    marginBottom: 6,
   },
   wearText: {
     fontSize: 15,

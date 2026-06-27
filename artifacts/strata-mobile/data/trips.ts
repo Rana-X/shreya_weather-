@@ -284,8 +284,8 @@ export const SEASON_CONFIG: Record<
   fall: {
     label: "Fall",
     emoji: "🍂",
-    color: "#D97706",
-    bgColor: "#FEF3C7",
+    color: "#C2610A",
+    bgColor: "#FEF0DC",
     months: "Sep – Nov",
   },
   winter: {
