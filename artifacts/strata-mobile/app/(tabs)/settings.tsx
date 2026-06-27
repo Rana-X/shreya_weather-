@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { type CityResult, useLocation } from "@/context/LocationContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useUnit } from "@/context/UnitContext";
 
 function CityRow({
   city,
@@ -79,6 +80,7 @@ export default function SettingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { isDark, toggleTheme } = useTheme();
+  const { unit, toggleUnit } = useUnit();
   const {
     cityName,
     savedLocations,
@@ -158,6 +160,57 @@ export default function SettingsScreen() {
                     trackColor={{ false: colors.border, true: colors.primary }}
                     thumbColor="#FFFFFF"
                   />
+                </View>
+
+                <View style={[styles.unitRow, { borderTopColor: colors.border }]}>
+                  <Ionicons name="thermometer" size={20} color={colors.primary} />
+                  <Text style={[styles.toggleLabel, { color: colors.foreground }]}>
+                    Temperature Unit
+                  </Text>
+                  <View style={[styles.unitToggle, { backgroundColor: colors.secondary }]}>
+                    <TouchableOpacity
+                      style={[
+                        styles.unitBtn,
+                        unit === "C" && { backgroundColor: colors.primary },
+                      ]}
+                      onPress={() => {
+                        if (unit !== "C") {
+                          Haptics.selectionAsync();
+                          toggleUnit();
+                        }
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.unitBtnText,
+                          { color: unit === "C" ? "#FFFFFF" : colors.mutedForeground },
+                        ]}
+                      >
+                        °C
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.unitBtn,
+                        unit === "F" && { backgroundColor: colors.primary },
+                      ]}
+                      onPress={() => {
+                        if (unit !== "F") {
+                          Haptics.selectionAsync();
+                          toggleUnit();
+                        }
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.unitBtnText,
+                          { color: unit === "F" ? "#FFFFFF" : colors.mutedForeground },
+                        ]}
+                      >
+                        °F
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
             </View>
@@ -294,6 +347,30 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: "500",
+  },
+  unitRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  unitToggle: {
+    flexDirection: "row",
+    borderRadius: 20,
+    padding: 3,
+    gap: 2,
+  },
+  unitBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  unitBtnText: {
+    fontSize: 14,
+    fontWeight: "700",
   },
   currentLoc: {
     flexDirection: "row",

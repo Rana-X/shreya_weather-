@@ -9,6 +9,7 @@ import Svg, {
   Line,
 } from "react-native-svg";
 import { useColors } from "@/hooks/useColors";
+import { useUnit } from "@/context/UnitContext";
 import type { HourlyItem } from "@/hooks/useWeather";
 
 interface TempChartProps {
@@ -45,18 +46,22 @@ const CHART_H = VB_H - PAD_T - PAD_B;
 
 export function TempChart({ items }: TempChartProps) {
   const colors = useColors();
+  const { formatTemp, unit } = useUnit();
 
   if (items.length < 2) return null;
 
-  const temps = items.map((h) => h.temp);
-  const minT = Math.min(...temps);
-  const maxT = Math.max(...temps);
+  const toDisplayTemp = (c: number) =>
+    unit === "F" ? Math.round(c * 9 / 5 + 32) : Math.round(c);
+
+  const displayTemps = items.map((h) => toDisplayTemp(h.temp));
+  const minT = Math.min(...displayTemps);
+  const maxT = Math.max(...displayTemps);
   const range = maxT - minT || 1;
 
   const toX = (i: number) => PAD_L + (i / (items.length - 1)) * CHART_W;
   const toY = (t: number) => PAD_T + (1 - (t - minT) / range) * CHART_H;
 
-  const pts = items.map((h, i) => ({ x: toX(i), y: toY(h.temp) }));
+  const pts = displayTemps.map((t, i) => ({ x: toX(i), y: toY(t) }));
   const linePath = smoothPath(pts);
   const lastPt = pts[pts.length - 1];
   const firstPt = pts[0];
@@ -108,7 +113,7 @@ export function TempChart({ items }: TempChartProps) {
         {labelIndices.map((i) => {
           const h = items[i];
           const x = toX(i);
-          const y = toY(h.temp);
+          const y = toY(displayTemps[i]);
           return (
             <React.Fragment key={i}>
               <SvgText
@@ -128,7 +133,7 @@ export function TempChart({ items }: TempChartProps) {
                 fontWeight="600"
                 fill={colors.foreground}
               >
-                {h.temp}°
+                {formatTemp(h.temp)}
               </SvgText>
             </React.Fragment>
           );

@@ -28,6 +28,7 @@ import {
 import { useLocation } from "@/context/LocationContext";
 import { AlertBanner } from "@/components/AlertBanner";
 import { useAlerts } from "@/hooks/useAlerts";
+import { useUnit } from "@/context/UnitContext";
 
 function uvLabel(uv: number): string {
   if (uv <= 2) return "Low";
@@ -92,6 +93,7 @@ export default function HomeScreen() {
   const { data: corrections } = useCorrections();
   const { data: alertsData } = useAlerts();
   const { data: aqiData } = useAQI();
+  const { formatTemp } = useUnit();
   const activeAlerts = alertsData?.alerts ?? [];
 
   const weatherType = weather?.current.weatherType ?? "cloudy";
@@ -160,13 +162,13 @@ export default function HomeScreen() {
         <View style={styles.hero}>
           <WeatherIcon type={weatherType} size={80} color={textColor} />
           <Text style={[styles.temp, { color: textColor }]}>
-            {weather?.current.temp ?? "--"}°
+            {weather ? formatTemp(weather.current.temp) : "--°"}
           </Text>
           <Text style={[styles.condition, { color: textColor }]}>
             {WEATHER_LABELS[weatherType]}
           </Text>
           <Text style={[styles.feelsLike, { color: textColor, opacity: 0.7 }]}>
-            Feels like {weather?.current.feelsLike ?? "--"}°
+            Feels like {weather ? formatTemp(weather.current.feelsLike) : "--°"}
           </Text>
         </View>
 

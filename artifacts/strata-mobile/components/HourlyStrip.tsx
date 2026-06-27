@@ -2,6 +2,7 @@ import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { WeatherIcon } from "@/components/WeatherIcon";
 import { useColors } from "@/hooks/useColors";
+import { useUnit } from "@/context/UnitContext";
 import { type HourlyItem } from "@/hooks/useWeather";
 
 interface Props {
@@ -26,13 +27,14 @@ function HourCell({
   index: number;
   textColor: string;
 }) {
+  const { formatTemp } = useUnit();
   return (
     <View style={styles.cell}>
       <Text style={[styles.hourLabel, { color: textColor, opacity: 0.7 }]}>
         {formatHour(item.hour, index)}
       </Text>
       <WeatherIcon type={item.weatherType} size={22} color={textColor} />
-      <Text style={[styles.temp, { color: textColor }]}>{item.temp}°</Text>
+      <Text style={[styles.temp, { color: textColor }]}>{formatTemp(item.temp)}</Text>
       {item.precipChance > 20 && (
         <Text style={[styles.precip, { color: textColor, opacity: 0.6 }]}>
           {item.precipChance}%

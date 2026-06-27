@@ -2,6 +2,7 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { WeatherIcon } from "@/components/WeatherIcon";
 import { useColors } from "@/hooks/useColors";
+import { useUnit } from "@/context/UnitContext";
 import { type DailyItem } from "@/hooks/useWeather";
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 
 function DayRow({ item }: { item: DailyItem }) {
   const colors = useColors();
+  const { formatTemp } = useUnit();
   return (
     <View style={[styles.row, { borderBottomColor: colors.border }]}>
       <Text style={[styles.dayName, { color: colors.foreground, width: 54 }]}>
@@ -25,10 +27,10 @@ function DayRow({ item }: { item: DailyItem }) {
       </View>
       <View style={styles.temps}>
         <Text style={[styles.high, { color: colors.foreground }]}>
-          {item.high}°
+          {formatTemp(item.high)}
         </Text>
         <Text style={[styles.low, { color: colors.mutedForeground }]}>
-          {item.low}°
+          {formatTemp(item.low)}
         </Text>
       </View>
     </View>
