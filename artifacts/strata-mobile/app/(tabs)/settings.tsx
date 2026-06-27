@@ -6,6 +6,7 @@ import {
   FlatList,
   Platform,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -14,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { type CityResult, useLocation } from "@/context/LocationContext";
+import { useTheme } from "@/context/ThemeContext";
 
 function CityRow({
   city,
@@ -76,6 +78,7 @@ function CityRow({
 export default function SettingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { isDark, toggleTheme } = useTheme();
   const {
     cityName,
     savedLocations,
@@ -131,6 +134,35 @@ export default function SettingsScreen() {
         ]}
         ListHeaderComponent={
           <>
+            {/* Appearance */}
+            <View style={styles.section}>
+              <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+                APPEARANCE
+              </Text>
+              <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={styles.toggleRow}>
+                  <Ionicons
+                    name={isDark ? "moon" : "sunny"}
+                    size={20}
+                    color={colors.primary}
+                  />
+                  <Text style={[styles.toggleLabel, { color: colors.foreground }]}>
+                    {isDark ? "Dark Mode" : "Light Mode"}
+                  </Text>
+                  <Switch
+                    value={isDark}
+                    onValueChange={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      toggleTheme();
+                    }}
+                    trackColor={{ false: colors.border, true: colors.primary }}
+                    thumbColor="#FFFFFF"
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* Location */}
             <View style={styles.section}>
               <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
                 LOCATION
@@ -181,6 +213,7 @@ export default function SettingsScreen() {
               </View>
             </View>
 
+            {/* Saved Locations */}
             {savedLocations.length > 0 && (
               <View style={styles.section}>
                 <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
@@ -199,6 +232,7 @@ export default function SettingsScreen() {
               </View>
             )}
 
+            {/* About */}
             <View style={styles.section}>
               <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
                 ABOUT
@@ -223,9 +257,7 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   header: {
     paddingHorizontal: 20,
     paddingBottom: 12,
@@ -240,9 +272,7 @@ const styles = StyleSheet.create({
     gap: 20,
     paddingTop: 8,
   },
-  section: {
-    gap: 8,
-  },
+  section: { gap: 8 },
   sectionLabel: {
     fontSize: 12,
     fontWeight: "600",
@@ -253,6 +283,17 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     overflow: "hidden",
+  },
+  toggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+  },
+  toggleLabel: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "500",
   },
   currentLoc: {
     flexDirection: "row",
@@ -296,9 +337,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "500",
   },
-  cityMeta: {
-    fontSize: 12,
-  },
+  cityMeta: { fontSize: 12 },
   aboutRow: {
     padding: 16,
     gap: 8,

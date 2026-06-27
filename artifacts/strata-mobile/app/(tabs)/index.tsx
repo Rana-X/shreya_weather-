@@ -17,15 +17,44 @@ import { HourlyStrip } from "@/components/HourlyStrip";
 import { WeatherIcon } from "@/components/WeatherIcon";
 import { useColors } from "@/hooks/useColors";
 import { useCorrections } from "@/hooks/useCorrections";
+import { useAQI } from "@/hooks/useAQI";
 import {
   WEATHER_DARK_TEXT,
   WEATHER_GRADIENTS,
   WEATHER_LABELS,
   useWeather,
+  type CurrentWeather,
 } from "@/hooks/useWeather";
 import { useLocation } from "@/context/LocationContext";
 import { AlertBanner } from "@/components/AlertBanner";
 import { useAlerts } from "@/hooks/useAlerts";
+
+function uvLabel(uv: number): string {
+  if (uv <= 2) return "Low";
+  if (uv <= 5) return "Moderate";
+  if (uv <= 7) return "High";
+  if (uv <= 10) return "Very High";
+  return "Extreme";
+}
+
+function getOutfitSuggestion(current: CurrentWeather): string {
+  const { temp, weatherType, windSpeed } = current;
+  const isRainy = weatherType === "rainy" || weatherType === "stormy";
+  const isSnowy = weatherType === "snowy";
+  const isWindy = windSpeed > 20;
+
+  if (temp >= 35) return "Shorts and a light t-shirt — stay hydrated! ☀️";
+  if (temp >= 28 && isRainy) return "Light clothes and an umbrella — warm but wet 🌂";
+  if (temp >= 28) return "Light clothes — shorts or a summer outfit 🌤️";
+  if (temp >= 20 && isRainy) return "Light jacket and umbrella needed ☔";
+  if (temp >= 20) return "T-shirt and jeans should work great 👕";
+  if (temp >= 10 && isRainy) return "Hoodie and umbrella — good idea ☔";
+  if (temp >= 10 && isWindy) return "Windbreaker — it's breezy out there 💨";
+  if (temp >= 10) return "Hoodie or light jacket time 🍂";
+  if (temp >= 0 && isSnowy) return "Warm coat, boots, and a scarf! ❄️";
+  if (temp >= 0) return "Warm coat and layers — it's cold! 🧥";
+  return "Heavy coat, hat, and gloves — bundle up! 🥶";
+}
 
 function StatPill({
   icon,
@@ -62,6 +91,7 @@ export default function HomeScreen() {
   const { data: weather, isLoading, refetch, isRefetching } = useWeather();
   const { data: corrections } = useCorrections();
   const { data: alertsData } = useAlerts();
+  const { data: aqiData } = useAQI();
   const activeAlerts = alertsData?.alerts ?? [];
 
   const weatherType = weather?.current.weatherType ?? "cloudy";
@@ -74,6 +104,8 @@ export default function HomeScreen() {
   ).length ?? 0;
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const today = weather?.daily[0];
+  const panelBg = `${textColor === "#FFFFFF" ? "#000000" : "#FFFFFF"}18`;
 
   if (locationLoading || (isLoading && !weather)) {
     return (
@@ -138,31 +170,89 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        <View style={[styles.statsRow, { borderColor: `${textColor}30` }]}>
-          <StatPill
-            icon="water"
-            value={`${weather?.current.humidity ?? "--"}%`}
-            label="Humidity"
-            textColor={textColor}
-          />
-          <View style={[styles.statDivider, { backgroundColor: `${textColor}30` }]} />
-          <StatPill
-            icon="speedometer"
-            value={`${weather?.current.windSpeed ?? "--"}mph`}
-            label="Wind"
-            textColor={textColor}
-          />
-          <View style={[styles.statDivider, { backgroundColor: `${textColor}30` }]} />
-          <StatPill
-            icon="eye"
-            value={`${weather?.current.pressure ?? "--"}mb`}
-            label="Pressure"
-            textColor={textColor}
-          />
+        {/* Stats card — two rows */}
+        <View style={[styles.statsCard, { borderColor: `${textColor}30` }]}>
+          <View style={styles.statsRow}>
+            <StatPill
+              icon="water"
+              value={`${weather?.current.humidity ?? "--"}%`}
+              label="Humidity"
+              textColor={textColor}
+            />
+            <View style={[styles.statDivider, { backgroundColor: `${textColor}30` }]} />
+            <StatPill
+              icon="speedometer"
+              value={`${weather?.current.windSpeed ?? "--"}mph`}
+              label="Wind"
+              textColor={textColor}
+            />
+            <View style={[styles.statDivider, { backgroundColor: `${textColor}30` }]} />
+            <StatPill
+              icon="eye"
+              value={`${weather?.current.pressure ?? "--"}mb`}
+              label="Pressure"
+              textColor={textColor}
+            />
+          </View>
+
+          <View style={[styles.rowSep, { backgroundColor: `${textColor}20` }]} />
+
+          <View style={styles.statsRow}>
+            <StatPill
+              icon="sunny"
+              value={`UV ${weather?.current.uvIndex ?? "--"}`}
+              label={weather ? uvLabel(weather.current.uvIndex) : "UV"}
+              textColor={textColor}
+            />
+            <View style={[styles.statDivider, { backgroundColor: `${textColor}30` }]} />
+            <StatPill
+              icon="sunny-outline"
+              value={today?.sunrise ?? "--"}
+              label="Sunrise"
+              textColor={textColor}
+            />
+            <View style={[styles.statDivider, { backgroundColor: `${textColor}30` }]} />
+            <StatPill
+              icon="moon-outline"
+              value={today?.sunset ?? "--"}
+              label="Sunset"
+              textColor={textColor}
+            />
+          </View>
         </View>
 
+        {/* AQI card */}
+        {aqiData && (
+          <View style={[styles.infoCard, { backgroundColor: panelBg }]}>
+            <View style={styles.aqiRow}>
+              <View style={[styles.aqiBadge, { backgroundColor: aqiData.color + "33", borderColor: aqiData.color }]}>
+                <View style={[styles.aqiDot, { backgroundColor: aqiData.color }]} />
+                <Text style={[styles.aqiBadgeText, { color: textColor }]}>
+                  {aqiData.label}
+                </Text>
+              </View>
+              <Text style={[styles.aqiDesc, { color: textColor }]}>
+                Air Quality · AQI {aqiData.aqi}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* What to Wear card */}
+        {weather && (
+          <View style={[styles.infoCard, { backgroundColor: panelBg }]}>
+            <Text style={[styles.cardLabel, { color: textColor }]}>
+              👕 WHAT TO WEAR
+            </Text>
+            <Text style={[styles.wearText, { color: textColor }]}>
+              {getOutfitSuggestion(weather.current)}
+            </Text>
+          </View>
+        )}
+
+        {/* Hourly panel */}
         {weather && weather.hourly.length > 0 && (
-          <View style={[styles.panel, { backgroundColor: `${textColor === "#FFFFFF" ? "#000000" : "#FFFFFF"}18` }]}>
+          <View style={[styles.panel, { backgroundColor: panelBg }]}>
             <Text style={[styles.panelTitle, { color: textColor, opacity: 0.8 }]}>
               HOURLY
             </Text>
@@ -170,12 +260,10 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {/* Neighbor banner */}
         {disagreements > 0 && (
           <TouchableOpacity
-            style={[
-              styles.neighborBanner,
-              { backgroundColor: `${textColor === "#FFFFFF" ? "#000000" : "#FFFFFF"}20` },
-            ]}
+            style={[styles.neighborBanner, { backgroundColor: panelBg }]}
             onPress={() => router.push("/(tabs)/community")}
             activeOpacity={0.8}
           >
@@ -194,9 +282,7 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   loading: {
     flex: 1,
     alignItems: "center",
@@ -208,12 +294,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
   },
-  scroll: {
-    flex: 1,
-  },
+  scroll: { flex: 1 },
   content: {
     paddingBottom: 120,
-    gap: 20,
+    gap: 16,
   },
   header: {
     flexDirection: "row",
@@ -236,7 +320,7 @@ const styles = StyleSheet.create({
   hero: {
     alignItems: "center",
     gap: 8,
-    paddingVertical: 16,
+    paddingVertical: 8,
   },
   temp: {
     fontSize: 90,
@@ -252,13 +336,21 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "400",
   },
+  statsCard: {
+    marginHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
   statsRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginHorizontal: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  rowSep: {
+    height: 1,
+    marginHorizontal: 16,
   },
   stat: {
     flex: 1,
@@ -266,16 +358,62 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   statValue: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "600",
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "400",
   },
   statDivider: {
     width: 1,
     height: 32,
+  },
+  infoCard: {
+    marginHorizontal: 16,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  aqiRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  aqiBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  aqiDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+  },
+  aqiBadgeText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  aqiDesc: {
+    fontSize: 13,
+    fontWeight: "400",
+    opacity: 0.8,
+  },
+  cardLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    opacity: 0.7,
+    marginBottom: 6,
+  },
+  wearText: {
+    fontSize: 15,
+    fontWeight: "500",
+    lineHeight: 22,
   },
   panel: {
     marginHorizontal: 16,
@@ -303,7 +441,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
   },
-  bottomSpacer: {
-    height: 16,
-  },
+  bottomSpacer: { height: 16 },
 });

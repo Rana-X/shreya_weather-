@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HourlyStrip } from "@/components/HourlyStrip";
 import { WeeklyForecast } from "@/components/WeeklyForecast";
+import { TempChart } from "@/components/TempChart";
 import { useColors } from "@/hooks/useColors";
 import { useWeather } from "@/hooks/useWeather";
 import { useLocation } from "@/context/LocationContext";
@@ -58,6 +59,15 @@ export default function ForecastScreen() {
 
       {weather && (
         <>
+          {/* Temperature chart */}
+          <View style={[styles.section, { borderColor: colors.border, backgroundColor: colors.card }]}>
+            <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
+              24-HOUR TEMPERATURE
+            </Text>
+            <TempChart items={weather.hourly} />
+          </View>
+
+          {/* Hourly strip */}
           <View style={[styles.section, { borderColor: colors.border, backgroundColor: colors.card }]}>
             <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>
               TODAY — HOUR BY HOUR
@@ -65,6 +75,7 @@ export default function ForecastScreen() {
             <HourlyStrip items={weather.hourly} textColor={colors.foreground} />
           </View>
 
+          {/* 7-day */}
           <View style={styles.sectionLabel}>
             <Text style={[styles.sectionTitle, { color: colors.mutedForeground, marginLeft: 4 }]}>
               7-DAY FORECAST
@@ -78,9 +89,7 @@ export default function ForecastScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   loading: {
     flex: 1,
     alignItems: "center",
