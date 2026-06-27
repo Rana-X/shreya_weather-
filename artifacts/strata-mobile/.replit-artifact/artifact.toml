@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/strata-mobile/"
+title = "Strata Mobile"
+version = "1.0.0"
+id = "artifacts/strata-mobile"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/strata-mobile/" ]
+localPort = 20750
+
+[services.development]
+run = "pnpm --filter @workspace/strata-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/strata-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/strata-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "20750"
+BASE_PATH = "/strata-mobile/"

@@ -1,5 +1,10 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "BJhIe6DD_11TjSpALAxDr"
+uri = "file://artifacts/strata-mobile/assets/images/icon.png"
+type = "image"
+title = "generated_image"
 
 [[outputs]]
 id = "2E--EgMrWb3ZVYSToMXpG"
