@@ -1,8 +1,8 @@
 import { Sun, Cloud, CloudRain, CloudLightning, Wind, CloudSnow, CloudFog, HelpCircle } from "lucide-react";
-import { CorrectionOfficialWeatherType, CorrectionActualWeatherType } from "@workspace/api-client-react";
+import type { WeatherType } from "@/lib/weather-types";
 
 interface WeatherIconProps {
-  weatherType: CorrectionOfficialWeatherType | CorrectionActualWeatherType;
+  weatherType: WeatherType;
   className?: string;
 }
 

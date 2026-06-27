@@ -1,6 +1,6 @@
 # WeatherAxis
 
-Your local weather app — see real forecasts and let neighbors flag when the sky tells a different story.
+Your local weather app — real-time forecasts, hourly and daily outlooks, air quality, and live rain radar for your location. No sign-in required.
 
 ## Run & Operate
 
@@ -22,15 +22,22 @@ Your local weather app — see real forecasts and let neighbors flag when the sk
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/weather-checkins` — web app (React + Vite). Theme tokens in `src/index.css`; weather types in `src/hooks/use-weather.ts`; live rain radar in `src/components/weather-radar.tsx`.
+- `artifacts/strata-mobile` — iOS Expo app (SDK 54). Home screen `app/(tabs)/index.tsx`; radar `app/(tabs)/radar.tsx` + `components/RadarMap.tsx`.
+- `artifacts/api-server` — Express API. Routes in `src/routes/`; health contract from `@workspace/api-zod`.
+- `lib/api-spec/openapi.yaml` — API contract source of truth; run codegen after edits.
+- `lib/db/src/schema/index.ts` — DB schema barrel (currently empty; app reads live data, persists nothing).
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- No authentication anywhere. Sign-in (Clerk) was removed across web, mobile, and API.
+- No neighbor-reports / corrections feature. Removed entirely (web UI, mobile tab, API routes, OpenAPI). Web `WeatherType` is a local union, decoupled from any generated correction schema.
+- Weather data comes live from Open-Meteo (forecast/AQI) and NWS (US alerts); nothing is stored in the DB.
+- Radar avoids reload churn: web uses a two-layer crossfade that pauses when offscreen/hidden; mobile builds the WebView HTML once and pushes GPS via `injectJavaScript` instead of reloading.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+WeatherAxis / Strata is a kid-friendly local weather suite (web + iOS): current conditions, hourly and daily forecasts, weather alerts, air quality, "what to wear" guidance, and a live animated rain radar. No login — open it and it uses your location.
 
 ## User preferences
 

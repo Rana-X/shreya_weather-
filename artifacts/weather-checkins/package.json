@@ -43,12 +43,10 @@
     "@replit/vite-plugin-runtime-error-modal": "catalog:",
     "@tailwindcss/typography": "^0.5.15",
     "@tailwindcss/vite": "catalog:",
-    "@tanstack/react-query": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
-    "@workspace/api-client-react": "workspace:*",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
     "cmdk": "^1.1.1",
@@ -75,8 +73,6 @@
     "zod": "catalog:"
   },
   "dependencies": {
-    "@clerk/react": "^6.11.1",
-    "@clerk/themes": "^2.4.57",
     "@types/leaflet": "^1.9.21",
     "leaflet": "^1.9.4",
     "react-leaflet": "^5.0.0"

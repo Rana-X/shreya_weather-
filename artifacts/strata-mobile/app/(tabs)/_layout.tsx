@@ -36,10 +36,6 @@ function NativeTabLayout() {
         <Icon sf={{ default: "newspaper", selected: "newspaper.fill" }} />
         <Label>News</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="community">
-        <Icon sf={{ default: "person.3", selected: "person.3.fill" }} />
-        <Label>Nearby</Label>
-      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="settings">
         <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
         <Label>Settings</Label>
@@ -155,18 +151,6 @@ function ClassicTabLayout() {
               <SymbolView name="newspaper" tintColor={color} size={24} />
             ) : (
               <Feather name="file-text" size={22} color={color} />
-            ),
-        }}
-      />
-      <Tabs.Screen
-        name="community"
-        options={{
-          title: "Nearby",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="person.3" tintColor={color} size={24} />
-            ) : (
-              <Feather name="users" size={22} color={color} />
             ),
         }}
       />

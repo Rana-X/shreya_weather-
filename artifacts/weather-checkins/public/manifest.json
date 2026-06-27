@@ -1,7 +1,7 @@
 {
   "name": "WeatherAxis — Your Local Weather App",
   "short_name": "WeatherAxis",
-  "description": "Real forecasts for your neighborhood. See what the weather is actually like near you.",
+  "description": "Real-time forecasts, hourly and daily outlooks, air quality, and live rain radar for your location.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

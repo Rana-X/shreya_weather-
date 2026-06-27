@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CorrectionOfficialWeatherType } from "@workspace/api-client-react";
+import type { WeatherType } from "@/lib/weather-types";
 
 export interface HourlyPrecip {
   hour: string;
@@ -10,7 +10,7 @@ export interface HourlyForecast {
   time: string;
   label: string;   // "Now", "1 PM", "2 AM", …
   temp: number;
-  type: CorrectionOfficialWeatherType;
+  type: WeatherType;
   precipChance: number;
   isNow: boolean;
   isMidnight: boolean; // marks day boundary
@@ -21,7 +21,7 @@ export interface DayForecast {
   dayName: string;     // "Today", "Mon", "Tue", …
   high: number;
   low: number;
-  type: CorrectionOfficialWeatherType;
+  type: WeatherType;
   precipChance: number;
 }
 
@@ -30,7 +30,7 @@ export interface WeatherData {
   feelsLike: number;
   windSpeed: number;
   humidity: number;
-  type: CorrectionOfficialWeatherType;
+  type: WeatherType;
   precipitationChance: number;
   hourlyPrecip: HourlyPrecip[];
   hourlyForecast: HourlyForecast[];
@@ -51,7 +51,7 @@ export interface WeatherData {
 const NYC_LAT = 40.71;
 const NYC_LON = -74.01;
 
-const mapWeatherCode = (code: number, windSpeed: number): CorrectionOfficialWeatherType => {
+const mapWeatherCode = (code: number, windSpeed: number): WeatherType => {
   if (code === 0) return "sunny";
   if ([1, 2, 3].includes(code)) return "cloudy";
   if ([45, 48].includes(code)) return "foggy";

@@ -48,35 +48,34 @@ function FrameLayer({
   attribution: string;
 }) {
   const map = useMap();
-  const layersRef = useRef<any[]>([]);
-  const prevIndexRef = useRef<number>(-1);
+  const aRef = useRef<any>(null);
+  const bRef = useRef<any>(null);
+  const frontIsARef = useRef(true);
 
+  // Create exactly TWO reusable tile layers — never one-per-frame. We swap the
+  // back layer's tile URL to the current frame and crossfade, so only the
+  // current/previous frame's tiles are ever in memory (no preloading).
   useEffect(() => {
-    if (!frames.length) return;
     const Lx = (window as any).L;
-    layersRef.current.forEach((l) => { try { map.removeLayer(l); } catch {} });
-    layersRef.current = [];
-    frames.forEach((frame) => {
-      const layer = Lx.tileLayer(tileUrl(frame.path), { opacity: 0, attribution });
-      layer.addTo(map);
-      layersRef.current.push(layer);
-    });
-    const last = frames.length - 1;
-    layersRef.current[last]?.setOpacity(0.7);
-    prevIndexRef.current = last;
+    aRef.current = Lx.tileLayer("", { opacity: 0, attribution, zIndex: 200 }).addTo(map);
+    bRef.current = Lx.tileLayer("", { opacity: 0, attribution, zIndex: 201 }).addTo(map);
     return () => {
-      layersRef.current.forEach((l) => { try { map.removeLayer(l); } catch {} });
-      layersRef.current = [];
+      [aRef, bRef].forEach((r) => {
+        if (r.current) { try { map.removeLayer(r.current); } catch {} r.current = null; }
+      });
     };
-  }, [frames, tileUrl]);
+  }, [map, attribution]);
 
   useEffect(() => {
-    if (!layersRef.current.length) return;
-    const prev = prevIndexRef.current;
-    if (prev >= 0 && prev < layersRef.current.length) layersRef.current[prev].setOpacity(0);
-    layersRef.current[frameIndex]?.setOpacity(0.7);
-    prevIndexRef.current = frameIndex;
-  }, [frameIndex]);
+    const frame = frames[frameIndex];
+    if (!frame || !aRef.current || !bRef.current) return;
+    const front = frontIsARef.current ? aRef.current : bRef.current;
+    const back = frontIsARef.current ? bRef.current : aRef.current;
+    back.setUrl(tileUrl(frame.path));
+    back.setOpacity(0.7);
+    front.setOpacity(0);
+    frontIsARef.current = !frontIsARef.current;
+  }, [frameIndex, frames, tileUrl]);
 
   return null;
 }
@@ -121,6 +120,12 @@ export function WeatherRadar({ lat, lon, locationName, isStormy = false }: Props
   const [loading,     setLoading]     = useState(true);
   const [recenterKey, setRecenterKey] = useState(0);
   const animRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(true);
+  const [pageVisible, setPageVisible] = useState(true);
+  // Only animate when actually playing AND the radar is on-screen and the tab
+  // is visible — keeps the rest of the app smooth.
+  const active = playing && inView && pageVisible;
 
   const frames = radarFrames;
   const isLastFrame = frameIndex === frames.length - 1;
@@ -143,6 +148,25 @@ export function WeatherRadar({ lat, lon, locationName, isStormy = false }: Props
     return () => clearTimeout(t);
   }, [frames.length, loading]);
 
+  // Pause the animation when the radar scrolls off-screen or the tab is hidden.
+  useEffect(() => {
+    const el = containerRef.current;
+    const onVis = () => setPageVisible(!document.hidden);
+    document.addEventListener("visibilitychange", onVis);
+    let io: IntersectionObserver | undefined;
+    if (el && typeof IntersectionObserver !== "undefined") {
+      io = new IntersectionObserver(
+        ([entry]) => setInView(entry.isIntersecting),
+        { threshold: 0.1 },
+      );
+      io.observe(el);
+    }
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      io?.disconnect();
+    };
+  }, []);
+
   useEffect(() => {
     if (animRef.current) clearTimeout(animRef.current);
     setPlaying(false);
@@ -151,6 +175,7 @@ export function WeatherRadar({ lat, lon, locationName, isStormy = false }: Props
       const t = setTimeout(() => setPlaying(true), 600);
       return () => clearTimeout(t);
     }
+    return undefined;
   }, [activeLayer]);
 
   const scheduleNext = useCallback((currentIndex: number) => {
@@ -166,10 +191,10 @@ export function WeatherRadar({ lat, lon, locationName, isStormy = false }: Props
   useEffect(() => {
     if (activeLayer !== "rain") { if (animRef.current) clearTimeout(animRef.current); return; }
     if (!frames.length) return;
-    if (playing) { scheduleNext(frameIndex); }
+    if (active) { scheduleNext(frameIndex); }
     else { if (animRef.current) clearTimeout(animRef.current); }
     return () => { if (animRef.current) clearTimeout(animRef.current); };
-  }, [playing, frames.length, activeLayer]);
+  }, [active, frames.length, activeLayer]);
 
   const togglePlay = () => setPlaying((p) => !p);
   const goToFrame  = (idx: number) => { if (animRef.current) clearTimeout(animRef.current); setFrameIndex(idx); setPlaying(false); };
@@ -183,7 +208,7 @@ export function WeatherRadar({ lat, lon, locationName, isStormy = false }: Props
   const isRain     = activeLayer === "rain";
 
   return (
-    <div className="bg-card rounded-2xl border border-border overflow-hidden">
+    <div ref={containerRef} className="bg-card rounded-2xl border border-border overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 space-y-3">
         <div className="flex items-center justify-between">

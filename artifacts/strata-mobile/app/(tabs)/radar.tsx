@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -9,7 +9,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useLocation } from "@/context/LocationContext";
-import { RadarMap } from "@/components/RadarMap";
+import { RadarMap, type RadarMapHandle } from "@/components/RadarMap";
 
 function buildMapHtml(lat: number, lon: number, isDark: boolean, modesTop: number): string {
   return `<!DOCTYPE html>
@@ -122,7 +122,7 @@ var pulseIcon = L.divIcon({
     '</div>',
   iconSize: [16,16], iconAnchor: [8,8], className: ''
 });
-L.marker([LAT, LON], { icon: pulseIcon }).addTo(map);
+var userMarker = L.marker([LAT, LON], { icon: pulseIcon }).addTo(map);
 
 // ── RADAR ────────────────────────────────────────────────
 var radarFrames = [];
@@ -135,7 +135,8 @@ async function loadRadarFrames() {
   try {
     var res = await fetch('https://api.rainviewer.com/public/weather-maps.json');
     var data = await res.json();
-    radarFrames = [...(data.radar.past||[]), ...(data.radar.nowcast||[])];
+    // Keep only the most recent frames so we don't fetch a huge tile set.
+    radarFrames = [...(data.radar.past||[]), ...(data.radar.nowcast||[])].slice(-8);
     // Pre-create tile layers (hidden)
     radarFrames.forEach(function(f) {
       var l = L.tileLayer(
@@ -338,6 +339,20 @@ async function setMode(mode){
   else if(mode==='temp'){ await loadTemp(); tempLayerGroup.addTo(map); }
 }
 
+// ── LOCATION UPDATES (pushed from native — no reload) ─────
+window.__setLocation = function(lat, lon){
+  if(typeof lat!=='number'||typeof lon!=='number'||isNaN(lat)||isNaN(lon)) return;
+  var moved = Math.abs(lat-LAT)+Math.abs(lon-LON);
+  LAT=lat; LON=lon;
+  userMarker.setLatLng([lat,lon]);
+  // Only recenter/refresh overlays on a meaningful move (ignore GPS jitter).
+  if(moved>0.05){
+    map.setView([lat,lon], map.getZoom(), { animate:true });
+    if(currentMode==='wind'){ loadWind(); }
+    else if(currentMode==='temp'){ loadTemp(); }
+  }
+};
+
 // Boot
 setMode('satellite');
 <\/script>
@@ -350,18 +365,33 @@ export default function RadarScreen() {
   const insets = useSafeAreaInsets();
   const { lat, lon, cityName } = useLocation();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
   // Position mode buttons below the "Radar" title header
   // topPad + 8 (content start) + ~38 (title) + ~19 (subtitle) + 12 (gap)
   const modesTop = topPad + 77;
 
-  const html = useMemo(() => {
-    if (lat == null || lon == null) return null;
-    return buildMapHtml(lat, lon, true, modesTop);
-  }, [lat, lon, modesTop]);
+  const mapRef = useRef<RadarMapHandle>(null);
 
-  if (lat == null || lon == null || !html) {
+  // Capture the first known location so the WebView HTML is built ONCE.
+  // Later GPS updates are pushed in via injectJavaScript — never a reload.
+  const initialLoc = useRef<{ lat: number; lon: number } | null>(null);
+  if (initialLoc.current == null && lat != null && lon != null) {
+    initialLoc.current = { lat, lon };
+  }
+  const hasLocation = initialLoc.current != null;
+
+  const html = useMemo(() => {
+    if (!initialLoc.current) return null;
+    return buildMapHtml(initialLoc.current.lat, initialLoc.current.lon, true, modesTop);
+    // Rebuild only when the header offset changes — never on GPS jitter.
+  }, [hasLocation, modesTop]);
+
+  // Push live location into the already-loaded map.
+  useEffect(() => {
+    if (lat != null && lon != null) mapRef.current?.setLocation(lat, lon);
+  }, [lat, lon]);
+
+  if (!html) {
     return (
       <View style={[styles.loading, { backgroundColor: colors.background }]}>
         <ActivityIndicator color={colors.primary} size="large" />
@@ -387,7 +417,7 @@ export default function RadarScreen() {
         </View>
       </View>
 
-      <RadarMap html={html} />
+      <RadarMap ref={mapRef} html={html} />
     </View>
   );
 }

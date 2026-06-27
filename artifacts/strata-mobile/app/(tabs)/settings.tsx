@@ -294,7 +294,7 @@ export default function SettingsScreen() {
                 <View style={styles.aboutRow}>
                   <Text style={[styles.aboutTitle, { color: colors.foreground }]}>WeatherAxis</Text>
                   <Text style={[styles.aboutSub, { color: colors.mutedForeground }]}>
-                    Your local weather app — where neighbors help each other know what it's really like outside!
+                    Your local weather app — real-time forecasts, radar, air quality, and alerts at a glance.
                   </Text>
                   <Text style={[styles.aboutVersion, { color: colors.mutedForeground }]}>
                     Version 1.0 · Weather by Open-Meteo

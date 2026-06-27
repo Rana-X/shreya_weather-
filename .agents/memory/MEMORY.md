@@ -1,0 +1,1 @@
+- [Expo stale bundle](expo-stale-bundle.md) — typecheck can pass while Expo crashes on a deleted hook; restart Metro to clear the stale bundle.

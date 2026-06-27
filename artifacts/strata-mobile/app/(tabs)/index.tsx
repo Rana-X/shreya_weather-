@@ -16,7 +16,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HourlyStrip } from "@/components/HourlyStrip";
 import { WeatherIcon } from "@/components/WeatherIcon";
 import { useColors } from "@/hooks/useColors";
-import { useCorrections } from "@/hooks/useCorrections";
 import { useAQI } from "@/hooks/useAQI";
 import {
   WEATHER_DARK_TEXT,
@@ -113,7 +112,6 @@ export default function HomeScreen() {
   const router = useRouter();
   const { cityName, isLoading: locationLoading } = useLocation();
   const { data: weather, isLoading, isError, refetch, isRefetching } = useWeather();
-  const { data: corrections } = useCorrections();
   const { data: alertsData } = useAlerts();
   const { data: aqiData } = useAQI();
   const { formatTemp } = useUnit();
@@ -123,9 +121,6 @@ export default function HomeScreen() {
   const gradient = WEATHER_GRADIENTS[weatherType];
   const isDarkText = WEATHER_DARK_TEXT.includes(weatherType);
   const textColor = isDarkText ? "#122436" : "#FFFFFF";
-
-  const disagreements =
-    corrections?.filter((c) => c.actualWeatherType !== c.officialWeatherType).length ?? 0;
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const today = weather?.daily[0];
@@ -316,26 +311,6 @@ export default function HomeScreen() {
             </Text>
             <HourlyStrip items={weather.hourly} textColor={textColor} />
           </View>
-        )}
-
-        {/* Neighbor banner */}
-        {disagreements > 0 && (
-          <TouchableOpacity
-            style={[styles.neighborBanner, { backgroundColor: panelBg }]}
-            onPress={() => router.push("/(tabs)/community")}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="people" size={18} color={textColor} />
-            <Text style={[styles.neighborText, { color: textColor }]}>
-              {disagreements} neighbor{disagreements !== 1 ? "s" : ""} see something different
-            </Text>
-            <Ionicons
-              name="chevron-forward"
-              size={16}
-              color={textColor}
-              style={{ opacity: 0.6 }}
-            />
-          </TouchableOpacity>
         )}
 
         <View style={styles.bottomSpacer} />
@@ -534,20 +509,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
     marginLeft: 20,
     marginBottom: 8,
-  },
-  neighborBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginHorizontal: 16,
-    padding: 14,
-    borderRadius: 14,
-    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
-  } as never,
-  neighborText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "500",
   },
   bottomSpacer: { height: 16 },
 });

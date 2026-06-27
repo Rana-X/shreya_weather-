@@ -41,7 +41,7 @@ export function useAlerts(lat: number, lon: number) {
         // NWS alerts API — free, no key, US only
         const res = await fetch(
           `https://api.weather.gov/alerts/active?point=${lat},${lon}&status=actual`,
-          { headers: { "User-Agent": "NeighborWeather/1.0 (educational project)" } }
+          { headers: { "User-Agent": "WeatherAxis/1.0 (educational project)" } }
         );
 
         if (res.status === 404 || res.status === 400) {
