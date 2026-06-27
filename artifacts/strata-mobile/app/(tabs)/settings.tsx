@@ -336,7 +336,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     overflow: "hidden",
-  },
+    boxShadow: "0 1px 4px rgba(18, 36, 54, 0.07)",
+  } as never,
   toggleRow: {
     flexDirection: "row",
     alignItems: "center",

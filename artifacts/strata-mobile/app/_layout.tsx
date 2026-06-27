@@ -6,6 +6,7 @@ import {
   useFonts,
 } from "@expo-google-fonts/outfit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { LinearGradient } from "expo-linear-gradient";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
@@ -15,8 +16,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LocationProvider } from "@/context/LocationContext";
-import { ThemeProvider } from "@/context/ThemeContext";
-import { UnitProvider } from "@/context/UnitContext";
+import { ThemeProvider, useTheme } from "@/context/ThemeContext";
+import { UnitProvider, useUnit } from "@/context/UnitContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,6 +29,22 @@ function RootLayoutNav() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
     </Stack>
   );
+}
+
+function HydrationGate({ children }: { children: React.ReactNode }) {
+  const { hydrated: unitHydrated } = useUnit();
+  const { hydrated: themeHydrated } = useTheme();
+
+  if (!unitHydrated || !themeHydrated) {
+    return (
+      <LinearGradient
+        colors={["#4A90C4", "#87D8F5"]}
+        style={{ flex: 1 }}
+      />
+    );
+  }
+
+  return <>{children}</>;
 }
 
 export default function RootLayout() {
@@ -52,13 +69,15 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
             <UnitProvider>
-              <LocationProvider>
-                <GestureHandlerRootView>
-                  <KeyboardProvider>
-                    <RootLayoutNav />
-                  </KeyboardProvider>
-                </GestureHandlerRootView>
-              </LocationProvider>
+              <HydrationGate>
+                <LocationProvider>
+                  <GestureHandlerRootView>
+                    <KeyboardProvider>
+                      <RootLayoutNav />
+                    </KeyboardProvider>
+                  </GestureHandlerRootView>
+                </LocationProvider>
+              </HydrationGate>
             </UnitProvider>
           </ThemeProvider>
         </QueryClientProvider>

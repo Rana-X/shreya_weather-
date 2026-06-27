@@ -7,25 +7,29 @@ const STORAGE_KEY = "@weatheraxis_unit";
 
 interface UnitContextValue {
   unit: TempUnit;
+  hydrated: boolean;
   toggleUnit: () => void;
   formatTemp: (celsius: number) => string;
 }
 
 const UnitContext = createContext<UnitContextValue>({
   unit: "C",
+  hydrated: false,
   toggleUnit: () => {},
   formatTemp: (c) => `${Math.round(c)}°`,
 });
 
 export function UnitProvider({ children }: { children: React.ReactNode }) {
   const [unit, setUnit] = useState<TempUnit>("C");
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
       .then((val) => {
         if (val === "F" || val === "C") setUnit(val);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setHydrated(true));
   }, []);
 
   const toggleUnit = () => {
@@ -42,7 +46,7 @@ export function UnitProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <UnitContext.Provider value={{ unit, toggleUnit, formatTemp }}>
+    <UnitContext.Provider value={{ unit, hydrated, toggleUnit, formatTemp }}>
       {children}
     </UnitContext.Provider>
   );

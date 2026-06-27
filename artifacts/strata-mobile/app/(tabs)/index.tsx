@@ -436,7 +436,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     overflow: "hidden",
-  },
+    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
+  } as never,
   statsRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -469,7 +470,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 12,
-  },
+    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
+  } as never,
   aqiRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -524,7 +526,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingTop: 12,
     paddingBottom: 8,
-  },
+    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
+  } as never,
   panelTitle: {
     fontSize: 12,
     fontWeight: "700",
@@ -539,7 +542,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     padding: 14,
     borderRadius: 14,
-  },
+    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
+  } as never,
   neighborText: {
     flex: 1,
     fontSize: 14,

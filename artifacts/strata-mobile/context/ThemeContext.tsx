@@ -6,17 +6,20 @@ const STORAGE_KEY = "@weatheraxis_theme";
 
 interface ThemeContextValue {
   isDark: boolean;
+  hydrated: boolean;
   toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
   isDark: false,
+  hydrated: false,
   toggleTheme: () => {},
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const system = useColorScheme();
   const [override, setOverride] = useState<boolean | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
@@ -24,7 +27,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         if (val === "dark") setOverride(true);
         else if (val === "light") setOverride(false);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setHydrated(true));
   }, []);
 
   const isDark = override !== null ? override : system === "dark";
@@ -39,7 +43,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme }}>
+    <ThemeContext.Provider value={{ isDark, hydrated, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

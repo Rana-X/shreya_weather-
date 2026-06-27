@@ -1,3 +1,4 @@
+import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { WeatherIcon } from "@/components/WeatherIcon";
@@ -41,11 +42,13 @@ function DayRow({
       </View>
 
       <View style={[styles.rangeTrack, { backgroundColor: colors.secondary }]}>
-        <View
+        <LinearGradient
+          colors={["#87D8F5", "#25A8E4"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
           style={[
             styles.rangeBar,
             {
-              backgroundColor: colors.primary,
               marginLeft: `${leftPct}%` as unknown as number,
               width: `${Math.max(widthPct, 8)}%` as unknown as number,
             },
@@ -76,9 +79,7 @@ export function WeeklyForecast({ items }: Props) {
     <View
       style={[
         styles.container,
-        {
-          backgroundColor: colors.card,
-        },
+        { backgroundColor: colors.card },
       ]}
     >
       {items.map((item) => (
@@ -96,10 +97,8 @@ export function WeeklyForecast({ items }: Props) {
 const styles = StyleSheet.create({
   container: {
     borderRadius: 16,
-    borderWidth: 1,
     overflow: "hidden",
-    boxShadow: "0 1px 4px rgba(18, 36, 54, 0.07)",
-  } as never,
+  },
   row: {
     flexDirection: "row",
     alignItems: "center",
