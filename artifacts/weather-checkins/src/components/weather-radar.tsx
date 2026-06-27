@@ -25,14 +25,16 @@ const LAYERS: { id: Layer; label: string; icon: typeof CloudRain }[] = [
   { id: "temperature", label: "Temperature", icon: Thermometer },
 ];
 
-// Builds radar/satellite tile URLs from a RainViewer frame path.
+// Builds radar tile URLs from a RainViewer frame path.
 function rainTile(path: string) {
   return `https://tilecache.rainviewer.com${path}/256/{z}/{x}/{y}/6/1_1.png`;
 }
-function satTile(path: string) {
-  // colour index 0, no smooth/snow — standard infrared satellite
-  return `https://tilecache.rainviewer.com${path}/256/{z}/{x}/{y}/0/0.png`;
-}
+
+// Esri World Imagery — free aerial/satellite photos, no API key needed.
+const ESRI_SAT_URL =
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const ESRI_SAT_ATTR =
+  "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community";
 
 // Pre-creates all tile layers at opacity 0, swaps opacity between frames —
 // no layer removal during animation so there's no blank gap.
@@ -118,47 +120,43 @@ const PAUSE_AT_END_MS = 1200;
 
 export function WeatherRadar({ lat, lon, locationName }: Props) {
   const [activeLayer, setActiveLayer] = useState<Layer>("rain");
-  const [radarFrames, setRadarFrames]   = useState<RadarFrame[]>([]);
-  const [satFrames,   setSatFrames]     = useState<RadarFrame[]>([]);
-  const [frameIndex,  setFrameIndex]    = useState(0);
+  const [radarFrames, setRadarFrames] = useState<RadarFrame[]>([]);
+  const [frameIndex,  setFrameIndex]  = useState(0);
   const [playing,     setPlaying]       = useState(false);
   const [loading,     setLoading]       = useState(true);
   const [recenterKey, setRecenterKey]   = useState(0);
   const animRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Which frame list is active?
-  const frames = activeLayer === "satellite" ? satFrames : radarFrames;
+  // Only rain uses animated frames now; satellite is a static imagery layer.
+  const frames = radarFrames;
   const isLastFrame = frameIndex === frames.length - 1;
 
-  // Fetch both radar and satellite frames in one call.
+  // Fetch radar frames only (satellite is static Esri tiles — no frames needed).
   useEffect(() => {
     fetch("https://api.rainviewer.com/public/weather-maps.json")
       .then((r) => r.json())
       .then((data) => {
         const radar: RadarFrame[] = data.radar?.past ?? [];
-        const sat:   RadarFrame[] = data.satellite?.infrared ?? [];
         setRadarFrames(radar);
-        setSatFrames(sat);
         setFrameIndex(radar.length > 0 ? radar.length - 1 : 0);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  // Auto-start rain/satellite animation after a short delay.
+  // Auto-start rain animation after a short delay.
   useEffect(() => {
     if (!frames.length || loading) return;
     const t = setTimeout(() => setPlaying(true), 1500);
     return () => clearTimeout(t);
   }, [frames.length, loading]);
 
-  // Reset frame index and restart animation when switching between map layers.
+  // Stop animation when leaving rain layer.
   useEffect(() => {
     if (animRef.current) clearTimeout(animRef.current);
     setPlaying(false);
-    if (activeLayer === "rain" || activeLayer === "satellite") {
-      const f = activeLayer === "satellite" ? satFrames : radarFrames;
-      setFrameIndex(f.length > 0 ? f.length - 1 : 0);
+    if (activeLayer === "rain") {
+      setFrameIndex(radarFrames.length > 0 ? radarFrames.length - 1 : 0);
       const t = setTimeout(() => setPlaying(true), 600);
       return () => clearTimeout(t);
     }
@@ -178,7 +176,7 @@ export function WeatherRadar({ lat, lon, locationName }: Props) {
   );
 
   useEffect(() => {
-    if (activeLayer !== "rain" && activeLayer !== "satellite") {
+    if (activeLayer !== "rain") {
       if (animRef.current) clearTimeout(animRef.current);
       return;
     }
@@ -207,6 +205,7 @@ export function WeatherRadar({ lat, lon, locationName }: Props) {
 
   const progress = frames.length > 1 ? frameIndex / (frames.length - 1) : 1;
   const isMapLayer = activeLayer === "rain" || activeLayer === "satellite";
+  const isRain = activeLayer === "rain";
 
   return (
     <div className="bg-card rounded-2xl border border-border overflow-hidden">
@@ -215,7 +214,7 @@ export function WeatherRadar({ lat, lon, locationName }: Props) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h3 className="font-display font-bold text-foreground text-base">Live Radar</h3>
-            {playing && isMapLayer && !loading && (
+            {playing && isRain && !loading && (
               <span className="flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-red-400 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
@@ -234,14 +233,14 @@ export function WeatherRadar({ lat, lon, locationName }: Props) {
             )}
           </div>
           <div className="flex items-center gap-3">
-            {isMapLayer && frameTime && (
+            {isRain && frameTime && (
               <span className="text-xs tabular-nums text-muted-foreground font-medium">
                 {isLastFrame
                   ? <span className="text-primary font-semibold">Now · {frameTime}</span>
                   : frameTime}
               </span>
             )}
-            {isMapLayer && frames.length > 1 && !loading && (
+            {isRain && frames.length > 1 && !loading && (
               <button
                 onClick={togglePlay}
                 className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
@@ -274,7 +273,19 @@ export function WeatherRadar({ lat, lon, locationName }: Props) {
 
       {/* Map / embed area */}
       <div className="relative" style={{ height: 280 }}>
-        {isMapLayer ? (
+        {activeLayer === "satellite" ? (
+          /* Real aerial imagery — Esri World Imagery tiles, zoomed in closer */
+          <MapContainer
+            center={[lat, lon]}
+            zoom={13}
+            style={{ height: "100%", width: "100%" }}
+            zoomControl
+            attributionControl
+          >
+            <TileLayer url={ESRI_SAT_URL} attribution={ESRI_SAT_ATTR} maxZoom={19} />
+            <MapRecenter lat={lat} lon={lon} trigger={recenterKey} />
+          </MapContainer>
+        ) : isRain ? (
           <>
             {loading && (
               <div className="absolute inset-0 flex items-center justify-center bg-muted/30 z-10">
@@ -295,11 +306,10 @@ export function WeatherRadar({ lat, lon, locationName }: Props) {
               <MapRecenter lat={lat} lon={lon} trigger={recenterKey} />
               {frames.length > 0 && (
                 <FrameLayer
-                  key={activeLayer}
                   frames={frames}
                   frameIndex={frameIndex}
-                  tileUrl={activeLayer === "satellite" ? satTile : rainTile}
-                  attribution={activeLayer === "satellite" ? "RainViewer Satellite" : "RainViewer"}
+                  tileUrl={rainTile}
+                  attribution="RainViewer"
                 />
               )}
             </MapContainer>
@@ -331,23 +341,14 @@ export function WeatherRadar({ lat, lon, locationName }: Props) {
           </div>
         </div>
       ) : activeLayer === "satellite" ? (
-        <div className="px-5 pt-4 pb-2">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[11px] font-bold text-foreground uppercase tracking-wider">Infrared satellite</span>
-            <span className="text-[10px] text-muted-foreground">cold → warm</span>
-          </div>
-          <div
-            className="w-full h-4 rounded-md border border-black/15"
-            style={{
-              background: "linear-gradient(to right, #ffffff, #c0d8f0, #6090c8, #204880, #000030)",
-            }}
-            aria-label="Satellite infrared scale: white = cold cloud tops, dark = warm/clear"
-          />
-          <div className="flex justify-between mt-1">
-            {["Cold clouds", "Mid clouds", "Thin clouds", "Haze", "Clear"].map((l) => (
-              <span key={l} className="text-[9px] font-medium text-muted-foreground">{l}</span>
-            ))}
-          </div>
+        <div className="px-5 py-3 border-t border-border">
+          <p className="text-xs text-muted-foreground">
+            Aerial imagery &copy;{" "}
+            <a href="https://www.esri.com" target="_blank" rel="noopener" className="text-primary underline">
+              Esri
+            </a>
+            {" "}— zoom in to see streets, buildings &amp; rooftops
+          </p>
         </div>
       ) : (
         <div className="px-5 py-3 border-t border-border">
@@ -360,8 +361,8 @@ export function WeatherRadar({ lat, lon, locationName }: Props) {
         </div>
       )}
 
-      {/* Progress bar + scrubber (rain & satellite only) */}
-      {isMapLayer && (
+      {/* Progress bar + scrubber (rain only) */}
+      {isRain && (
         <div className="px-5 py-3 border-t border-border space-y-2">
           {frames.length > 1 && (
             <div className="w-full h-1 bg-border rounded-full overflow-hidden">
