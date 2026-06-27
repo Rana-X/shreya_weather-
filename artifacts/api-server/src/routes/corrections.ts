@@ -6,15 +6,14 @@ import {
   ListCorrectionsQueryParams,
   AgreeWithCorrectionParams,
 } from "@workspace/api-zod";
+import { sanitizeText } from "../lib/sanitize";
 
 const router = Router();
 
 // ── IP-based rate limiting ────────────────────────────────────────────────────
-// Keeps a list of submission timestamps per IP address.
-// Automatically cleans up entries older than the window on every request.
-const RATE_WINDOW_MS  = 60 * 60 * 1000; // 1 hour
-const RATE_MAX_HITS   = 5;              // max 5 reports per IP per hour
-const ipTimestamps    = new Map<string, number[]>();
+const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const RATE_MAX_HITS  = 5;
+const ipTimestamps   = new Map<string, number[]>();
 
 function getClientIp(req: any): string {
   return (
@@ -34,7 +33,6 @@ function isRateLimited(ip: string): boolean {
   return false;
 }
 
-// Periodically purge entries that are entirely outside the window to avoid unbounded growth.
 setInterval(() => {
   const cutoff = Date.now() - RATE_WINDOW_MS;
   for (const [ip, times] of ipTimestamps) {
@@ -42,9 +40,9 @@ setInterval(() => {
     if (fresh.length === 0) ipTimestamps.delete(ip);
     else ipTimestamps.set(ip, fresh);
   }
-}, 10 * 60 * 1000); // clean up every 10 minutes
+}, 10 * 60 * 1000);
 
-// ── Routes ───────────────────────────────────────────────────────────────────
+// ── Routes ────────────────────────────────────────────────────────────────────
 
 router.get("/corrections", async (req, res) => {
   const parsed = ListCorrectionsQueryParams.safeParse(req.query);
@@ -63,7 +61,7 @@ router.get("/corrections", async (req, res) => {
 });
 
 router.post("/corrections", async (req, res) => {
-  // ── Rate limit check ──────────────────────────────────────────────────────
+  // 1. Rate limit
   const ip = getClientIp(req);
   if (isRateLimited(ip)) {
     req.log.warn({ ip }, "Rate limit hit on POST /corrections");
@@ -72,19 +70,37 @@ router.post("/corrections", async (req, res) => {
     });
   }
 
+  // 2. Schema validation
   const parsed = CreateCorrectionBody.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: "Invalid body" });
   }
 
-  const { actualWeatherType, officialWeatherType, description, locationName } = parsed.data;
+  // 3. Content sanitisation (HTML stripping + hate-speech filter)
+  const descResult = sanitizeText(parsed.data.description, {
+    maxLength: 500,
+    fieldName: "Description",
+  });
+  if (!descResult.ok) {
+    return res.status(422).json({ error: descResult.reason });
+  }
+
+  const locResult = sanitizeText(parsed.data.locationName, {
+    maxLength: 100,
+    fieldName: "Location name",
+  });
+  if (!locResult.ok) {
+    return res.status(422).json({ error: locResult.reason });
+  }
+
+  // 4. Persist
   const [row] = await db
     .insert(correctionsTable)
     .values({
-      actualWeatherType,
-      officialWeatherType,
-      description:  description  ?? null,
-      locationName: locationName ?? null,
+      actualWeatherType:   parsed.data.actualWeatherType,
+      officialWeatherType: parsed.data.officialWeatherType,
+      description:         descResult.value,
+      locationName:        locResult.value,
     })
     .returning();
 
