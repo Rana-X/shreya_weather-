@@ -24,6 +24,8 @@ import {
   useWeather,
 } from "@/hooks/useWeather";
 import { useLocation } from "@/context/LocationContext";
+import { AlertBanner } from "@/components/AlertBanner";
+import { useAlerts } from "@/hooks/useAlerts";
 
 function StatPill({
   icon,
@@ -59,6 +61,8 @@ export default function HomeScreen() {
   const { cityName, isLoading: locationLoading } = useLocation();
   const { data: weather, isLoading, refetch, isRefetching } = useWeather();
   const { data: corrections } = useCorrections();
+  const { data: alertsData } = useAlerts();
+  const activeAlerts = alertsData?.alerts ?? [];
 
   const weatherType = weather?.current.weatherType ?? "cloudy";
   const gradient = WEATHER_GRADIENTS[weatherType];
@@ -118,6 +122,8 @@ export default function HomeScreen() {
             <Ionicons name="search" size={22} color={textColor} style={{ opacity: 0.8 }} />
           </TouchableOpacity>
         </View>
+
+        <AlertBanner alerts={activeAlerts} textColor={textColor} />
 
         <View style={styles.hero}>
           <WeatherIcon type={weatherType} size={80} color={textColor} />

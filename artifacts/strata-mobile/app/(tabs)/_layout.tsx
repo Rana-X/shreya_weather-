@@ -20,6 +20,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "cloud.sun", selected: "cloud.sun.fill" }} />
         <Label>Forecast</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="alerts">
+        <Icon sf={{ default: "exclamationmark.triangle", selected: "exclamationmark.triangle.fill" }} />
+        <Label>Alerts</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="radar">
         <Icon sf={{ default: "antenna.radiowaves.left.and.right", selected: "antenna.radiowaves.left.and.right" }} />
         <Label>Radar</Label>
@@ -99,6 +103,18 @@ function ClassicTabLayout() {
               <SymbolView name="cloud.sun" tintColor={color} size={24} />
             ) : (
               <Feather name="cloud" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="alerts"
+        options={{
+          title: "Alerts",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="exclamationmark.triangle" tintColor={color} size={24} />
+            ) : (
+              <Feather name="alert-triangle" size={22} color={color} />
             ),
         }}
       />
