@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "2E--EgMrWb3ZVYSToMXpG"
+uri = "file://artifacts/weather-checkins/public/favicon.svg"
+type = "image"
+title = "Strata App Icon"
