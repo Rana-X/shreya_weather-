@@ -28,6 +28,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "antenna.radiowaves.left.and.right", selected: "antenna.radiowaves.left.and.right" }} />
         <Label>Radar</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="trips">
+        <Icon sf={{ default: "airplane", selected: "airplane" }} />
+        <Label>Trips</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="news">
         <Icon sf={{ default: "newspaper", selected: "newspaper.fill" }} />
         <Label>News</Label>
@@ -127,6 +131,18 @@ function ClassicTabLayout() {
               <SymbolView name="antenna.radiowaves.left.and.right" tintColor={color} size={24} />
             ) : (
               <Feather name="radio" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="trips"
+        options={{
+          title: "Trips",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="airplane" tintColor={color} size={24} />
+            ) : (
+              <Feather name="navigation" size={22} color={color} />
             ),
         }}
       />
