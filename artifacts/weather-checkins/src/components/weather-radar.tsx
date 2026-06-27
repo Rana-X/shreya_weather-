@@ -1,8 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
-import { Loader2, Play, Pause, Wind, Thermometer, CloudRain, Crown, MapPin } from "lucide-react";
-import { useLocation } from "wouter";
-import { useSubscription } from "@/hooks/use-subscription";
+import { Loader2, Play, Pause, Wind, Thermometer, CloudRain, MapPin } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 
 interface RadarFrame {
@@ -18,10 +16,10 @@ interface Props {
 
 type Layer = "rain" | "wind" | "temperature";
 
-const LAYERS: { id: Layer; label: string; icon: typeof CloudRain; premium: boolean }[] = [
-  { id: "rain",        label: "Rain",        icon: CloudRain,   premium: false },
-  { id: "wind",        label: "Wind",        icon: Wind,        premium: true  },
-  { id: "temperature", label: "Temperature", icon: Thermometer, premium: true  },
+const LAYERS: { id: Layer; label: string; icon: typeof CloudRain }[] = [
+  { id: "rain",        label: "Rain",        icon: CloudRain   },
+  { id: "wind",        label: "Wind",        icon: Wind        },
+  { id: "temperature", label: "Temperature", icon: Thermometer },
 ];
 
 // Pre-creates all radar tile layers at opacity 0, then just toggles opacity
@@ -108,31 +106,6 @@ function WindyEmbed({ lat, lon, overlay }: { lat: number; lon: number; overlay: 
   );
 }
 
-function PremiumGate({ layer }: { layer: "wind" | "temperature" }) {
-  const [, setLocation] = useLocation();
-  return (
-    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm">
-      <div className="bg-card border border-border rounded-2xl px-7 py-6 shadow-xl flex flex-col items-center gap-3 max-w-[280px] text-center">
-        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-          <Crown className="w-6 h-6 text-primary" />
-        </div>
-        <p className="font-display font-bold text-foreground text-base leading-snug">
-          {layer === "wind" ? "Wind Speed Radar" : "Temperature Radar"} is a Premium feature
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Upgrade to see live {layer === "wind" ? "wind speed" : "air temperature"} maps and more.
-        </p>
-        <button
-          onClick={() => setLocation("/premium")}
-          className="w-full py-2.5 rounded-full bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90 transition-colors"
-        >
-          Upgrade — $3.99/mo
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export function WeatherRadar({ lat, lon, locationName }: Props) {
   const [activeLayer, setActiveLayer] = useState<Layer>("rain");
   const [frames, setFrames] = useState<RadarFrame[]>([]);
@@ -141,7 +114,6 @@ export function WeatherRadar({ lat, lon, locationName }: Props) {
   const [radarLoading, setRadarLoading] = useState(true);
   const [recenterKey, setRecenterKey] = useState(0);
   const animRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { isPremium } = useSubscription();
 
   const isLastFrame = frameIndex === frames.length - 1;
 
@@ -205,9 +177,6 @@ export function WeatherRadar({ lat, lon, locationName }: Props) {
 
   const progress = frames.length > 1 ? frameIndex / (frames.length - 1) : 1;
 
-  const selectedLayer = LAYERS.find((l) => l.id === activeLayer)!;
-  const needsPremium = selectedLayer.premium && !isPremium;
-
   return (
     <div className="bg-card rounded-2xl border border-border overflow-hidden">
       {/* Header + layer switcher */}
@@ -255,7 +224,7 @@ export function WeatherRadar({ lat, lon, locationName }: Props) {
 
         {/* Layer tabs */}
         <div className="flex gap-1.5">
-          {LAYERS.map(({ id, label, icon: Icon, premium }) => (
+          {LAYERS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setActiveLayer(id)}
@@ -267,9 +236,6 @@ export function WeatherRadar({ lat, lon, locationName }: Props) {
             >
               <Icon className="w-3 h-3" />
               {label}
-              {premium && !isPremium && (
-                <Crown className="w-2.5 h-2.5 opacity-60" />
-              )}
             </button>
           ))}
         </div>
@@ -295,21 +261,12 @@ export function WeatherRadar({ lat, lon, locationName }: Props) {
                 url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                 attribution='&copy; <a href="https://carto.com/">CARTO</a>'
               />
-              {/* Re-centers whenever lat/lon change (new search) or user taps the location pill */}
               <MapRecenter lat={lat} lon={lon} trigger={recenterKey} />
               {frames.length > 0 && (
                 <RadarLayer frames={frames} frameIndex={frameIndex} />
               )}
             </MapContainer>
           </>
-        ) : needsPremium ? (
-          <div className="relative w-full h-full bg-muted/20">
-            {/* Blurred preview */}
-            <div className="w-full h-full opacity-30 pointer-events-none select-none overflow-hidden">
-              <WindyEmbed lat={lat} lon={lon} overlay={activeLayer === "wind" ? "wind" : "temp"} />
-            </div>
-            <PremiumGate layer={activeLayer as "wind" | "temperature"} />
-          </div>
         ) : (
           <WindyEmbed lat={lat} lon={lon} overlay={activeLayer === "wind" ? "wind" : "temp"} />
         )}
@@ -337,14 +294,14 @@ export function WeatherRadar({ lat, lon, locationName }: Props) {
             </div>
           </div>
         </div>
-      ) : isPremium ? (
+      ) : (
         <div className="px-5 py-3 border-t border-border">
           <p className="text-xs text-muted-foreground">
             {activeLayer === "wind" ? "Wind map" : "Temperature map"} powered by{" "}
             <a href="https://www.windy.com" target="_blank" rel="noopener" className="text-primary underline">Windy.com</a>
           </p>
         </div>
-      ) : null}
+      )}
 
       {/* Rain progress + scrubber */}
       {activeLayer === "rain" && (
