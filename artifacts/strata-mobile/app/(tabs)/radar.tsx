@@ -11,7 +11,7 @@ import { useColors } from "@/hooks/useColors";
 import { useLocation } from "@/context/LocationContext";
 import { RadarMap } from "@/components/RadarMap";
 
-function buildMapHtml(lat: number, lon: number, isDark: boolean): string {
+function buildMapHtml(lat: number, lon: number, isDark: boolean, modesTop: number): string {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -24,7 +24,7 @@ function buildMapHtml(lat: number, lon: number, isDark: boolean): string {
   #map { width:100%; height:100%; }
 
   #modes {
-    position:absolute; top:12px; left:50%; transform:translateX(-50%);
+    position:absolute; top:${modesTop}px; left:50%; transform:translateX(-50%);
     z-index:1000; display:flex; gap:5px;
     background:rgba(10,18,34,0.88); padding:5px;
     border-radius:14px; border:1px solid rgba(255,255,255,0.08);
@@ -352,10 +352,14 @@ export default function RadarScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
+  // Position mode buttons below the "Radar" title header
+  // topPad + 8 (content start) + ~38 (title) + ~19 (subtitle) + 12 (gap)
+  const modesTop = topPad + 77;
+
   const html = useMemo(() => {
     if (lat == null || lon == null) return null;
-    return buildMapHtml(lat, lon, true);
-  }, [lat, lon]);
+    return buildMapHtml(lat, lon, true, modesTop);
+  }, [lat, lon, modesTop]);
 
   if (lat == null || lon == null || !html) {
     return (
