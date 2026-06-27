@@ -17,3 +17,9 @@ id = "Y-Ar093h-gmEQhZ9E_Crh"
 uri = "file://artifacts/strata-mobile/assets/images/icon.png"
 type = "image"
 title = "WeatherAxis App Icon (1024×1024)"
+
+[[outputs]]
+id = "uWCBCY2bYDHpB-wsDMAmw"
+uri = "file://strata-mobile.tar.gz"
+type = "unspecified"
+title = "Strata Mobile App — source code"
