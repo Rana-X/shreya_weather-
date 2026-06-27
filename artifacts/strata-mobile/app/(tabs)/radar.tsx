@@ -42,17 +42,27 @@ function buildMapHtml(lat: number, lon: number, isDark: boolean): string {
 
   #legend {
     position:absolute; bottom:28px; left:12px; z-index:1000;
-    background:rgba(10,18,34,0.88); padding:10px 12px; border-radius:12px;
-    border:1px solid rgba(255,255,255,0.08);
-    box-shadow:0 4px 16px rgba(0,0,0,0.4);
-    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-    display:none; flex-direction:column; gap:6px;
+    background:rgba(10,18,34,0.92); padding:11px 13px; border-radius:13px;
+    border:1px solid rgba(255,255,255,0.1);
+    box-shadow:0 4px 20px rgba(0,0,0,0.5);
+    backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+    display:none; flex-direction:column; gap:7px;
+    max-width:calc(100vw - 24px);
   }
-  .legend-title { color:rgba(255,255,255,0.45); font-size:9px; font-weight:700;
-    text-transform:uppercase; letter-spacing:1px; font-family:-apple-system,sans-serif; }
-  .legend-items { display:flex; gap:8px; align-items:center; }
-  .legend-swatch { width:24px; height:8px; border-radius:2px; }
-  .legend-label { color:rgba(255,255,255,0.45); font-size:9px; font-family:-apple-system,sans-serif; }
+  .legend-section { display:flex; flex-direction:column; gap:5px; }
+  .legend-section-title {
+    color:rgba(255,255,255,0.5); font-size:9px; font-weight:700;
+    text-transform:uppercase; letter-spacing:0.9px;
+    font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+  }
+  .legend-items { display:flex; gap:6px; align-items:flex-end; flex-wrap:wrap; }
+  .legend-item { display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .legend-swatch { width:22px; height:7px; border-radius:2px; }
+  .legend-label {
+    color:rgba(255,255,255,0.42); font-size:8px;
+    font-family:-apple-system,BlinkMacSystemFont,sans-serif; white-space:nowrap;
+  }
+  .legend-divider { height:1px; background:rgba(255,255,255,0.1); }
 
   #time-badge {
     position:absolute; top:12px; right:12px; z-index:1000;
@@ -74,10 +84,7 @@ function buildMapHtml(lat: number, lon: number, isDark: boolean): string {
   <button class="mode-btn" onclick="setMode('wind')" id="btn-wind">💨 Wind</button>
   <button class="mode-btn" onclick="setMode('temp')" id="btn-temp">🌡️ Temp</button>
 </div>
-<div id="legend">
-  <div class="legend-title" id="legend-title"></div>
-  <div class="legend-items" id="legend-items"></div>
-</div>
+<div id="legend"></div>
 <div id="time-badge" id="time-badge"></div>
 
 <script>
@@ -253,14 +260,29 @@ async function loadTemp(){
 
 // ── LEGEND ────────────────────────────────────────────────
 var LEGENDS={
-  radar:{title:'Precipitation intensity',items:[
-    {c:'#4DFF00',l:'Light'},{c:'#FFFF00',l:'Moderate'},{c:'#FF8C00',l:'Heavy'},{c:'#FF0000',l:'Severe'}
+  radar:{sections:[
+    {title:'🌧 Rain',items:[
+      {c:'#7FE87F',l:'Drizzle'},{c:'#4DFF00',l:'Light'},
+      {c:'#FFFF00',l:'Moderate'},{c:'#FF8C00',l:'Heavy'},
+      {c:'#FF2200',l:'Intense'},{c:'#CC00FF',l:'Extreme'}
+    ]},
+    {title:'❄️ Snow & Ice',items:[
+      {c:'#BFEFFF',l:'Lt Snow'},{c:'#40C8FF',l:'Snow'},
+      {c:'#1455CC',l:'Hvy Snow'},{c:'#FF80C0',l:'Sleet/Ice'}
+    ]}
   ]},
-  wind:{title:'Wind speed (mph)',items:[
-    {c:'#93C5FD',l:'< 5'},{c:'#2563EB',l:'15'},{c:'#7C3AED',l:'25'},{c:'#DB2777',l:'40+'}
+  wind:{sections:[
+    {title:'💨 Wind speed (mph)',items:[
+      {c:'#93C5FD',l:'< 5'},{c:'#60A5FA',l:'5–15'},
+      {c:'#2563EB',l:'15–25'},{c:'#7C3AED',l:'25–40'},{c:'#DB2777',l:'40+'}
+    ]}
   ]},
-  temp:{title:'Temperature (°F)',items:[
-    {c:'#0ea5e9',l:'Cold'},{c:'#10b981',l:'Cool'},{c:'#facc15',l:'Warm'},{c:'#ef4444',l:'Hot'}
+  temp:{sections:[
+    {title:'🌡️ Temperature (°F)',items:[
+      {c:'#1d4ed8',l:'< 25'},{c:'#0ea5e9',l:'32'},
+      {c:'#10b981',l:'50'},{c:'#84cc16',l:'65'},
+      {c:'#facc15',l:'75'},{c:'#f97316',l:'85'},{c:'#ef4444',l:'95+'}
+    ]}
   ]}
 };
 
@@ -269,11 +291,19 @@ function updateLegend(mode){
   var cfg=LEGENDS[mode];
   if(!cfg){ el.style.display='none'; return; }
   el.style.display='flex';
-  document.getElementById('legend-title').textContent=cfg.title;
-  document.getElementById('legend-items').innerHTML=cfg.items.map(function(x){
-    return '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">'+
-      '<div class="legend-swatch" style="background:'+x.c+'"></div>'+
-      '<div class="legend-label">'+x.l+'</div></div>';
+  el.innerHTML=cfg.sections.map(function(sec,si){
+    return (si>0?'<div class="legend-divider"></div>':'')+
+      '<div class="legend-section">'+
+        '<div class="legend-section-title">'+sec.title+'</div>'+
+        '<div class="legend-items">'+
+          sec.items.map(function(x){
+            return '<div class="legend-item">'+
+              '<div class="legend-swatch" style="background:'+x.c+'"></div>'+
+              '<div class="legend-label">'+x.l+'</div>'+
+            '</div>';
+          }).join('')+
+        '</div>'+
+      '</div>';
   }).join('');
 }
 
