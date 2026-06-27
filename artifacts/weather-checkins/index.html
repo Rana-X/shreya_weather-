@@ -2,20 +2,51 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+
+    <!-- ── Viewport ──────────────────────────────────────────────────────── -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- ── PWA / Web App Manifest ────────────────────────────────────────── -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- ── Theme colour (browser chrome + iOS status bar) ───────────────── -->
+    <meta name="theme-color" content="#4bbfd6" />
+
+    <!-- ── Apple / iOS ───────────────────────────────────────────────────── -->
+    <!-- Enables full-screen "standalone" mode when added to Home Screen -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <!-- App name shown under the icon on the Home Screen -->
+    <meta name="apple-mobile-web-app-title" content="Strata" />
+    <!-- Status bar style: default | black | black-translucent -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <!-- Home-screen icon (Safari uses this when the user taps "Add to Home Screen") -->
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+
+    <!-- ── Standard icon ─────────────────────────────────────────────────── -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- ── Page metadata ─────────────────────────────────────────────────── -->
     <title>Strata — Your local weather app</title>
     <meta name="description" content="Strata — Your local weather app. See real forecasts and report what the weather is actually like in your neighborhood." />
     <meta name="robots" content="index, follow" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- ── Open Graph ────────────────────────────────────────────────────── -->
     <meta property="og:title" content="Strata — Your local weather app" />
     <meta property="og:description" content="Strata — Your local weather app. See real forecasts and report what the weather is actually like in your neighborhood." />
     <meta property="og:type" content="website" />
+    <meta property="og:image" content="/opengraph.jpg" />
+
+    <!-- ── Twitter / X ───────────────────────────────────────────────────── -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Strata — Your local weather app" />
     <meta name="twitter:description" content="Strata — Your local weather app. See real forecasts and report what the weather is actually like in your neighborhood." />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="twitter:image" content="/opengraph.jpg" />
+
+    <!-- ── Fonts ─────────────────────────────────────────────────────────── -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Outfit:wght@100..900&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="root"></div>

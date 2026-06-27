@@ -1,3 +1,19 @@
 <svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="180" height="180" rx="36" fill="#FF3C00"/>
+  <rect width="180" height="180" rx="40" fill="#4bbfd6"/>
+  <!-- Sun rays -->
+  <circle cx="72" cy="68" r="18" fill="#FFE066" opacity="0.95"/>
+  <line x1="72" y1="42" x2="72" y2="36" stroke="#FFE066" stroke-width="5" stroke-linecap="round"/>
+  <line x1="72" y1="98" x2="72" y2="104" stroke="#FFE066" stroke-width="5" stroke-linecap="round"/>
+  <line x1="46" y1="68" x2="40" y2="68" stroke="#FFE066" stroke-width="5" stroke-linecap="round"/>
+  <line x1="98" y1="68" x2="104" y2="68" stroke="#FFE066" stroke-width="5" stroke-linecap="round"/>
+  <line x1="54" y1="50" x2="50" y2="46" stroke="#FFE066" stroke-width="5" stroke-linecap="round"/>
+  <line x1="90" y1="86" x2="94" y2="90" stroke="#FFE066" stroke-width="5" stroke-linecap="round"/>
+  <line x1="90" y1="50" x2="94" y2="46" stroke="#FFE066" stroke-width="5" stroke-linecap="round"/>
+  <line x1="54" y1="86" x2="50" y2="90" stroke="#FFE066" stroke-width="5" stroke-linecap="round"/>
+  <!-- Cloud -->
+  <ellipse cx="110" cy="108" rx="28" ry="20" fill="white" opacity="0.97"/>
+  <ellipse cx="90" cy="114" rx="22" ry="17" fill="white" opacity="0.97"/>
+  <ellipse cx="128" cy="114" rx="18" ry="15" fill="white" opacity="0.97"/>
+  <rect x="68" y="114" width="78" height="18" rx="9" fill="white" opacity="0.97"/>
+  <ellipse cx="95" cy="100" rx="20" ry="18" fill="white" opacity="0.97"/>
 </svg>

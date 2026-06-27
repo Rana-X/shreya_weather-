@@ -1,0 +1,30 @@
+{
+  "name": "Strata — Your Local Weather App",
+  "short_name": "Strata",
+  "description": "Real forecasts for your neighborhood. See what the weather is actually like near you.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#eef7fb",
+  "theme_color": "#4bbfd6",
+  "categories": ["weather", "utilities"],
+  "lang": "en-US",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "related_applications": [],
+  "prefer_related_applications": false
+}
