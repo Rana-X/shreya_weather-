@@ -1,1 +1,1 @@
-- [Expo stale bundle](expo-stale-bundle.md) — typecheck can pass while Expo crashes on a deleted hook; restart Metro to clear the stale bundle.
+- [Expo native tabs 5-item cap](expo-native-tabs-overflow.md) — >5 `NativeTabs` tabs get hidden under an iOS "More" menu on real devices; use ClassicTabLayout (React Navigation `Tabs`) when all tabs must stay visible.
