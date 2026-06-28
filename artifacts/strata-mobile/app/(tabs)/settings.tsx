@@ -4,12 +4,14 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  LayoutAnimation,
   Platform,
   StyleSheet,
   Switch,
   Text,
   TextInput,
   TouchableOpacity,
+  UIManager,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -18,6 +20,13 @@ import { HomeBackButton } from "@/components/HomeBackButton";
 import { type CityResult, useLocation } from "@/context/LocationContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useUnit } from "@/context/UnitContext";
+
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 function CityRow({
   city,
@@ -101,12 +110,14 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     if (query.length < 2) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setResults([]);
       return;
     }
     const timer = setTimeout(async () => {
       setIsSearching(true);
       const cities = await searchCities(query);
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setResults(cities);
       setIsSearching(false);
     }, 400);

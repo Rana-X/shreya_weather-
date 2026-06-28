@@ -1,1 +1,2 @@
 - [Expo native tabs 5-item cap](expo-native-tabs-overflow.md) — >5 `NativeTabs` tabs get hidden under an iOS "More" menu on real devices; use ClassicTabLayout (React Navigation `Tabs`) when all tabs must stay visible.
+- [Expo/Metro stale bundle](expo-stale-bundle.md) — typecheck can be green while the running Expo app crashes on old code; restart the Expo workflow after deleting/renaming RN modules before trusting a runtime fix.

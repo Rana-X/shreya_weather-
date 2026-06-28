@@ -120,7 +120,7 @@ export function TempChart({ items }: TempChartProps) {
                 x={x}
                 y={VB_H - 5}
                 textAnchor="middle"
-                fontSize="9"
+                fontSize="11"
                 fill={colors.mutedForeground}
               >
                 {i === 0 ? "Now" : fmtHour(h.hour)}
@@ -129,7 +129,7 @@ export function TempChart({ items }: TempChartProps) {
                 x={x}
                 y={y - 5}
                 textAnchor="middle"
-                fontSize="9"
+                fontSize="11"
                 fontWeight="600"
                 fill={colors.foreground}
               >

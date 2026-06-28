@@ -3,11 +3,13 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  LayoutAnimation,
   Platform,
   RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
+  UIManager,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -19,6 +21,13 @@ import {
 import { useColors } from "@/hooks/useColors";
 import { HomeBackButton } from "@/components/HomeBackButton";
 import { useLocation } from "@/context/LocationContext";
+
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 function timeLabel(iso: string): string {
   if (!iso) return "";
@@ -48,7 +57,10 @@ function AlertCard({
 
   return (
     <TouchableOpacity
-      onPress={() => setExpanded((e) => !e)}
+      onPress={() => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setExpanded((e) => !e);
+      }}
       activeOpacity={0.8}
       style={[
         styles.card,
@@ -247,7 +259,9 @@ export default function AlertsScreen() {
             </View>
           ) : (
             <View style={styles.empty}>
-              <Text style={styles.clearIcon}>✅</Text>
+              <View style={[styles.iconCircle, { backgroundColor: colors.primary + "18" }]}>
+                <Ionicons name="shield-checkmark" size={44} color={colors.primary} />
+              </View>
               <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
                 All clear!
               </Text>
@@ -342,7 +356,13 @@ const styles = StyleSheet.create({
     padding: 40,
     gap: 12,
   },
-  clearIcon: { fontSize: 54 },
+  iconCircle: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   emptyTitle: { fontSize: 22, fontWeight: "700", textAlign: "center" },
   emptyBody: { fontSize: 15, textAlign: "center", lineHeight: 22 },
 });
